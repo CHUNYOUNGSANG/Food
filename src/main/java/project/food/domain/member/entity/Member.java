@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import project.food.global.enums.Role;
 
 
 @Entity
@@ -16,23 +17,26 @@ public class Member {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "member_seq")
     @SequenceGenerator(name = "member_seq", sequenceName = "MEMBER_SEQ", initialValue = 1, allocationSize = 1)
-    @Column(name = "id")
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private String name;
 
-    @Column(name = "nickname", nullable = false, length = 50, unique = true)
+    @Column(nullable = false, length = 50, unique = true)
     private String nickname;
 
-    @Column(name = "email", nullable = false, length = 100, unique = true)
+    @Column(nullable = false, length = 100, unique = true)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    @Column(nullable = false)
     private String password;
 
-    @Column(name = "profile_image", length = 700)
+    @Column(length = 700)
     private String profileImage;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private Role role;
 
     @Builder
     public Member(String email, String password, String name,
@@ -42,9 +46,10 @@ public class Member {
         this.name = name;
         this.nickname = nickname;
         this.profileImage = profileImage;
+        this.role = Role.USER;
     }
 
-    // 회원 정보 수정
+    // 회원 정보 수정 메서드
     public void updateProfile(String name, String nickname, String profileImage) {
         this.name = name;
         this.nickname = nickname;
@@ -53,8 +58,14 @@ public class Member {
         }
     }
 
+    // 비밀번호 변경 메서드
     public void updatePassword(String newPassword) {
         this.password = newPassword;
+    }
+
+    // 권한 확인 메서드
+    public boolean isAdmin() {
+        return this.role == Role.ADMIN;
     }
 
 }
