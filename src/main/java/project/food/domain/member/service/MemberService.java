@@ -9,6 +9,8 @@ import project.food.domain.member.dto.MemberResponseDto;
 import project.food.domain.member.dto.MemberUpdateDto;
 import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
+import project.food.global.exception.CustomException;
+import project.food.global.exception.ErrorCode;
 
 @Service
 @Slf4j
@@ -18,18 +20,20 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
 
-    // 회원가입
+    /**
+     * 회원가입
+     */
     public MemberResponseDto signUp(MemberRequestDto requestDto) {
         log.info("회원가입 시도: email = {}", requestDto.getEmail());
 
         // 이메일 중복 확인
         if (memberRepository.existsByEmail(requestDto.getEmail())) {
-            throw new IllegalArgumentException("이미 존재하는 이메일입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         // 닉네임 중복 확인
         if (memberRepository.existsByNickname(requestDto.getNickname())) {
-            throw new IllegalArgumentException("이미 존재하는 닉네임입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
         }
 
         // 비밀번호 암호화
@@ -45,39 +49,46 @@ public class MemberService {
         return MemberResponseDto.from(savedMember);
     }
 
-    // 회원 정보 조회
+    /**
+     * 회원 정보 조회
+     */
     public MemberResponseDto getMember(Long id) {
         log.info("회원 조회: id = {}", id);
 
         Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         return MemberResponseDto.from(member);
     }
 
-    // 이메일로 회원 조회
+    /**
+     * 이메일로 회원 조회
+     */
     public MemberResponseDto getMemberByEmail(String email) {
         log.info("이메일로 회원 조회: email = {}", email);
 
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원 이메일입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         return MemberResponseDto.from(member);
     }
 
-    // 회원 정보 수정
+    /**
+     * 회원 정보 수정
+     * @return
+     */
     @Transactional
     public MemberResponseDto updateMember(Long id, MemberUpdateDto updateDto) {
         log.info("회원 정보 수정: id = {}", id);
 
         // 회원 조회
         Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 닉네임 변경 시 중복 확인
         if (!member.getNickname().equals(updateDto.getNickname())) {
             if (memberRepository.existsByNickname(updateDto.getNickname())) {
-                throw new IllegalArgumentException("중복된 닉네임입니다.");
+                throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
             }
         }
 
@@ -100,7 +111,7 @@ public class MemberService {
 
         // 회원 조회
         Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 새 비밀번호 암호화 및 변경
         String encodedPassword = newPassword;
@@ -109,14 +120,16 @@ public class MemberService {
         log.info("비밀번호 변경 완료: id = {}", id);
     }
 
-    // 회원 탈퇴
+    /**
+     * 회원 탈퇴
+     */
     @Transactional
     public void deleteMember(Long id) {
         log.info("회원 탈퇴: id = {}", id);
 
         // 회원 조회
         if (!memberRepository.existsById(id)) {
-            throw new IllegalArgumentException("존재하지 않는 회원입니다.");
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         // 회원 삭제
@@ -125,12 +138,16 @@ public class MemberService {
         log.info("회원 탈퇴 완료: id = {}", id);
     }
 
-    // 이메일 중복 확인
+    /**
+     * 이메일 중복 확인
+     */
     public boolean isEmailDuplicate(String email) {
         return memberRepository.existsByEmail(email);
     }
 
-    // 닉네임 중복 확인
+    /**
+     * 닉네임 중복 확인
+     */
     public boolean isNicknameDuplicate(String nickname) {
         return memberRepository.existsByNickname(nickname);
     }

@@ -5,18 +5,20 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import project.food.global.common.BaseTimeEntity;
 import project.food.global.enums.Role;
+
+import java.time.LocalDateTime;
 
 
 @Entity
 @Table(name = "member")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member {
+public class Member extends BaseTimeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "member_seq")
-    @SequenceGenerator(name = "member_seq", sequenceName = "MEMBER_SEQ", initialValue = 1, allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 50)
@@ -38,6 +40,9 @@ public class Member {
     @Column(nullable = false, length = 50)
     private Role role;
 
+    @Column(nullable = false)
+    private LocalDateTime joinDate;
+
     @Builder
     public Member(String email, String password, String name,
                   String nickname, String profileImage) {
@@ -47,6 +52,7 @@ public class Member {
         this.nickname = nickname;
         this.profileImage = profileImage;
         this.role = Role.USER;
+        this.joinDate = LocalDateTime.now();
     }
 
     // 회원 정보 수정 메서드
