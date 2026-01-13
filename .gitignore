@@ -36,5 +36,11 @@ out/
 ### VS Code ###
 .vscode/
 
+### H2 Database ###
+.db
+.mv.db
+.trace.db
+
 ### YAML ###
-application.yaml
+.env
+src/main/resources/application-sercet.yml
