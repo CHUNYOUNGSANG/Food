@@ -43,4 +43,4 @@ out/
 
 ### YAML ###
 .env
-src/main/resources/application-sercet.yml
+src/main/resources/application-secret.yml
