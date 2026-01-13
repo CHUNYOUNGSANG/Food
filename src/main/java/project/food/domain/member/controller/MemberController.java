@@ -68,4 +68,14 @@ public class MemberController {
         boolean isDuplicate = memberService.isEmailDuplicate(email);
         return ResponseEntity.ok(isDuplicate);
     }
+
+    /**
+     * 닉네임 중복 확인
+     * GET
+     */
+    @GetMapping("/check-nickname")
+    public ResponseEntity<Boolean> checkNicknameDuplicate(@RequestParam String nickname) {
+        boolean isDuplicate = memberService.isNicknameDuplicate(nickname);
+        return ResponseEntity.ok(isDuplicate);
+    }
 }
