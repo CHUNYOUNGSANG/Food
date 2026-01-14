@@ -23,6 +23,7 @@ public class MemberService {
     /**
      * 회원가입
      */
+    @Transactional
     public MemberResponseDto signUp(MemberRequestDto requestDto) {
         log.info("회원가입 시도: email = {}", requestDto.getEmail());
 
