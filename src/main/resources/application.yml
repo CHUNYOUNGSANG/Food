@@ -1,13 +1,12 @@
 spring:
   application:
     name: Food
-  profiles:
-    active: dev
+  profiles: { include: secret, active: dev }
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
   jpa:
     open-in-view: false
     properties:
@@ -19,12 +18,6 @@ spring:
       enabled: true
       max-file-size: 10MB
       max-request-size: 10MB
-  jackson:
-    serialization:
-      write-dates-as-timestamps: false
-    deserialization:
-      fail-on-unknown-properties: false
-    time-zone: Asia/Seoul
 
 logging:
   level:
