@@ -158,7 +158,7 @@ public class PostService {
      * @return 검색 결과 게시글 목록
      */
     public List<PostResponseDto> searchPosts(String keyword) {
-        List<Post> posts = postRepository.finByTitleContaining(keyword);
+        List<Post> posts = postRepository.findByTitleContaining(keyword);
         return posts.stream()
                 .map(PostResponseDto::from)
                 .collect(Collectors.toList());
