@@ -44,3 +44,6 @@ out/
 ### YAML ###
 .env
 src/main/resources/application-secret.yml
+
+### macOs ###
+.DS_Store
