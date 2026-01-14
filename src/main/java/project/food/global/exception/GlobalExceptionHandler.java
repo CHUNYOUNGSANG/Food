@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
      * @param e CustomException
      * @return ErrorResponse
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
         log.error("CustomException 발생: [{}] {}", e.getErrorCode().getCode(), e.getMessage());
 
@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
      * @return ErrorResponse
      */
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(HttpMediaTypeNotSupportedException e) {
         log.error("Method Not Allowed Exception 발생: {}", e.getMessage());
 
         ErrorResponse response = ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED);
