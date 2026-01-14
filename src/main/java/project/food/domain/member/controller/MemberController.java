@@ -31,7 +31,7 @@ public class MemberController {
      * 회원 정보 조회
      * GET /api/members/{id}
      */
-    @GetMapping
+    @GetMapping("{id}")
     public ResponseEntity<MemberResponseDto> getMember(@PathVariable Long id) {
         MemberResponseDto responseDto = memberService.getMember(id);
         return ResponseEntity.ok(responseDto);
@@ -41,7 +41,7 @@ public class MemberController {
      * 회원 정보 수정
      * PUT /api/members/{id}
      */
-    @PutMapping
+    @PutMapping("{id}")
     public ResponseEntity<MemberResponseDto> updateMember(
             @PathVariable Long id,
             @Valid @RequestBody MemberUpdateDto updateDto) {
@@ -53,7 +53,7 @@ public class MemberController {
      * 회원 탈퇴
      * DELETE /api/members/{id}
      */
-    @DeleteMapping
+    @DeleteMapping("{id}")
     public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
         memberService.deleteMember(id);
         return ResponseEntity.noContent().build();
