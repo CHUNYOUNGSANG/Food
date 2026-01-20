@@ -2,10 +2,13 @@ package project.food.domain.post.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import project.food.domain.comment.entity.Comment;
 import project.food.domain.member.entity.Member;
 import project.food.global.common.BaseTimeEntity;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 게시글 엔티티
@@ -91,6 +94,15 @@ public class Post extends BaseTimeEntity {
     private Integer viewCount = 0;
 
     /**
+     * 댯굴 목록 (1:N)
+     * - 게시글 삭제 시 댓글도 함께 삭제 (cascade = ALl)
+     * - 연관관계가 끊긴 댓글 자동 삭제 (orphanRemoval = true)
+     */
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Comment> comments = new ArrayList<>();
+
+    /**
      * 게시글 수정
      * @param title 수정할 제목
      * @param content 수정할 내용
@@ -137,5 +149,33 @@ public class Post extends BaseTimeEntity {
      */
     public String getRatingAsString() {
         return this.rating != null ? this.rating + "점" : "평점 없음";
+    }
+
+    /**
+     * 댓글 개수 조회
+     * @return 댓글 개수
+     */
+    public int getCommentsCount() {
+        return this.comments.size();
+    }
+
+    /**
+     * 댓글 추가
+     * (양방향 연관관계 설정)
+     *
+     * @param comment 추가할 댓글
+     */
+    public void addComment(Comment comment) {
+        this.comments.add(comment);
+    }
+
+    /**
+     * 댓글 제거
+     * (양방향 연관관계 해제)
+     *
+     * @param comment 제거할 댓글
+     */
+    public void removeComment(Comment comment) {
+        this.comments.remove(comment);
     }
 }
