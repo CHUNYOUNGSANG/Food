@@ -41,7 +41,11 @@ public enum ErrorCode {
     /** 파일 관련 에러 (F: File) */
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "F001", "파일 업로드에 실패했습니다."),
     INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "F002", "지원하지 않는 파일 형식입니다."),
-    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "F003", "파일 크기가 너무 큽니다.");
+    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "F003", "파일 크기가 너무 큽니다."),
+
+    /** 좋아요 관련 에러 (L: Like) */
+    ALREADY_LIKED(HttpStatus.CONFLICT, "L001", "이미 좋아요를 눌렀습니다."),
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "L002", "좋아요를 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

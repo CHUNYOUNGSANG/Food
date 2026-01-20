@@ -27,7 +27,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @param Keyword 검색 키워드
      * @return 게시글 목록
      */
-    List<Post> findByTitleContaining(String Keyword);
+    List<Post> findByTitleContaining(String keyword);
 
     /**
      * 최신술 정렬
