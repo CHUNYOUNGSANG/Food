@@ -81,7 +81,7 @@ public class CommentService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        List<Comment> comments = commentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+        List<Comment> comments = commentRepository.findByPost_IdOrderByCreatedAtAsc(postId);
 
         return comments.stream()
                 .map(CommentResponseDto::from)
@@ -100,7 +100,7 @@ public class CommentService {
             throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
-        List<Comment> comments = commentRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
+        List<Comment> comments = commentRepository.findByMember_IdAndDeletedFalseOrderByCreatedAtDesc(memberId);
 
         return comments.stream()
                 .map(CommentResponseDto::from)
@@ -217,7 +217,6 @@ public class CommentService {
      * - 부모 댓글도 완전히 삭제
      * @param parentCommentId 부모 댓글 ID
      */
-    // ✅ 올바른 코드
     public void cleanupParentComment(Long parentCommentId) {
         Comment parentComment = commentRepository.findById(parentCommentId)
                 .orElse(null);
