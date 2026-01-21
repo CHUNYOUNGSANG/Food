@@ -1,4 +1,4 @@
-package project.food.domain.postlike.dto;
+package project.food.domain.like.postlike.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
