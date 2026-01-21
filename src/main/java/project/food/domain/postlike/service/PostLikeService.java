@@ -116,7 +116,7 @@ public class PostLikeService {
         log.info("좋아요 개수 조회: memberId = {}, postId = {}", memberId, postId);
 
         // 게시글 존재 확인
-        if (!postLikeRepository.existsById(postId)) {
+        if (!postRepository.existsById(postId)) {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
