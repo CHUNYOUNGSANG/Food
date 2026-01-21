@@ -18,7 +18,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param postId 게시글 ID
      * @return 댓글 목록 (오래된 댓글이 먼저)
      */
-    List<Comment> findByPostIdOrderByCreatedAtAsc(Long postId);
+    List<Comment> findByPost_IdOrderByCreatedAtAsc(Long postId);
 
     /**
      * 특정 회원이 작성한 댓글 목록 조회 (최신순)
@@ -27,7 +27,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param memberId 회원 ID
      * @return 댓글 목록 (최신 댓글이 먼저)
      */
-    List<Comment> findByMemberIdOrderByCreatedAtDesc(Long memberId);
+    List<Comment> findByMember_IdAndDeletedFalseOrderByCreatedAtDesc(Long memberId);
 
     /**
      * 특정 부모 댓글에 대댓글이 있는지 확인
