@@ -1,10 +1,10 @@
-package project.food.domain.postlike.repository;
+package project.food.domain.like.postlike.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import project.food.domain.postlike.entity.PostLike;
+import project.food.domain.like.postlike.entity.PostLike;
 
 import java.util.List;
 import java.util.Optional;

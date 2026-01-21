@@ -1,4 +1,4 @@
-package project.food.domain.postlike.service;
+package project.food.domain.like.postlike.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,10 +8,10 @@ import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
 import project.food.domain.post.entity.Post;
 import project.food.domain.post.repository.PostRepository;
-import project.food.domain.postlike.dto.PostLikeCountDTO;
-import project.food.domain.postlike.dto.PostLikeResponseDto;
-import project.food.domain.postlike.entity.PostLike;
-import project.food.domain.postlike.repository.PostLikeRepository;
+import project.food.domain.like.postlike.dto.PostLikeCountDTO;
+import project.food.domain.like.postlike.dto.PostLikeResponseDto;
+import project.food.domain.like.postlike.entity.PostLike;
+import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 

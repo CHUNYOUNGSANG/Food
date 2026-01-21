@@ -1,9 +1,9 @@
-package project.food.domain.postlike.dto;
+package project.food.domain.like.postlike.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Getter;
-import project.food.domain.postlike.entity.PostLike;
+import project.food.domain.like.postlike.entity.PostLike;
 
 import java.time.LocalDateTime;
 

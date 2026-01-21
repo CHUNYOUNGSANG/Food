@@ -1,4 +1,4 @@
-package project.food.domain.postlike.entity;
+package project.food.domain.like.postlike.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

@@ -1,12 +1,12 @@
-package project.food.domain.postlike.controller;
+package project.food.domain.like.postlike.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import project.food.domain.postlike.dto.PostLikeCountDTO;
-import project.food.domain.postlike.dto.PostLikeResponseDto;
-import project.food.domain.postlike.service.PostLikeService;
+import project.food.domain.like.postlike.dto.PostLikeCountDTO;
+import project.food.domain.like.postlike.dto.PostLikeResponseDto;
+import project.food.domain.like.postlike.service.PostLikeService;
 
 import java.util.List;
 
