@@ -1,5 +1,12 @@
 package project.food.domain.post.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +23,7 @@ import java.util.List;
  * 게시글 관련 HTTP 요청 처리
  * RESTful API 구현
  */
+@Tag(name = "Post", description = "게시글 API")
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
@@ -23,6 +31,13 @@ public class PostController {
 
     private final PostService postService;
 
+    @Operation(summary = "게시글 생성", description = "새로운 게시글을 작성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "게시글 생성 성공",
+                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
     /**
      * 게시글 생성
      * POST /api/posts
@@ -32,7 +47,9 @@ public class PostController {
      */
     @PostMapping
     public ResponseEntity<PostResponseDto> createPost(
+            @Parameter(description = "작성자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId,
+            @Parameter(description = "게시글 생성 요청 데이터", required = true)
             @RequestBody PostRequestDto request) {
 
         PostResponseDto response = postService.createPost(memberId, request);
@@ -44,6 +61,9 @@ public class PostController {
      * GET /api/posts
      * @return 전체 게시글 목록 (200 OK)
      */
+    @Operation(summary = "게시글 전체 목록 조회 (최신순)", description = "모든 게시글을 최신순으로 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping
     public ResponseEntity<List<PostResponseDto>> getAllPosts() {
         List<PostResponseDto> posts = postService.getAllPosts();
@@ -56,8 +76,16 @@ public class PostController {
      * @param postId 게시글 ID
      * @return 게시글 상세 정보 (200 OK)
      */
+    @Operation(summary = "게시글 상세 조회", description = "특정 게시글의 상제 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @GetMapping("/{postId}")
-    public ResponseEntity<PostResponseDto> getPost(@PathVariable Long postId) {
+    public ResponseEntity<PostResponseDto> getPost(
+            @Parameter(description = "게시글 ID", required = true)
+            @PathVariable Long postId) {
         PostResponseDto response = postService.getPost(postId);
         return ResponseEntity.ok(response);
     }
@@ -70,10 +98,20 @@ public class PostController {
      * @param request 수정 요청 데이터
      * @return 수정된 게시글 정보 (200 OK)
      */
+    @Operation(summary = "게시글 수정", description = "작성한 게시글을 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "수정 성공",
+                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "수정 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @PutMapping("/{postId}")
     public ResponseEntity<PostResponseDto> updatePost(
+            @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
+            @Parameter(description = "수정 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId,
+            @Parameter(description = "게시글 수정 데이터", required = true)
             @RequestBody PostUpdateDto request) {
 
         PostResponseDto response = postService.updatePost(postId, memberId, request);
@@ -87,9 +125,17 @@ public class PostController {
      * @param memberId 삭제 요청자 ID (헤더)
      * @return 204 No Content
      */
+    @Operation(summary = "게시글 삭제", description = "작성한 게시글을 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "삭제 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+    })
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(
+            @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
+            @Parameter(description = "삭제 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId) {
 
         postService.deletePost(postId, memberId);
@@ -102,8 +148,16 @@ public class PostController {
      * @param memberId 회원 ID
      * @return 해당 회원의 게시글 목록 (200 OK)
      */
+    @Operation(summary = "회원별 게시글 조회", description = "특정 회원이 작성한 모든 게시글을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<PostResponseDto>> getPostsByMember(@PathVariable Long memberId) {
+    public ResponseEntity<List<PostResponseDto>> getPostsByMember(
+            @Parameter(description = "회원 ID", required = true)
+            @PathVariable Long memberId) {
         List<PostResponseDto> posts = postService.getPostsByMember(memberId);
         return ResponseEntity.ok(posts);
     }
@@ -114,8 +168,13 @@ public class PostController {
      * @param foodCategory 음식 카테고리
      * @return 해당 카테고리의 게시글 목록 (200 OK)
      */
+    @Operation(summary = "카테고리별 게시글 조회", description = "특정 음식 카테고리의 게시글을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공",
+            content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping("/category/{foodCategory}")
-    public ResponseEntity<List<PostResponseDto>> getPostsByCategory(@PathVariable String foodCategory) {
+    public ResponseEntity<List<PostResponseDto>> getPostsByCategory(
+            @Parameter(description = "음식 카테고리 (예: 한식, 중식, 양식)", required = true)
+            @PathVariable String foodCategory) {
         List<PostResponseDto> posts = postService.getPostsByCategory(foodCategory);
         return ResponseEntity.ok(posts);
     }
@@ -126,8 +185,13 @@ public class PostController {
      * @param keyword 검색 키워드
      * @return 검색 결과 게시글 목록 (200 OK)
      */
+    @Operation(summary = "게시글 검색", description = "제목 또는 내용에 키워드가 포함된 게시글을 검색합니다.")
+    @ApiResponse(responseCode = "200", description = "검색 성공",
+            content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping("/search")
-    public ResponseEntity<List<PostResponseDto>> searchPosts(@RequestParam String keyword) {
+    public ResponseEntity<List<PostResponseDto>> searchPosts(
+            @Parameter(description = "검색 키워드", required = true, example = "맛집")
+            @RequestParam String keyword) {
         List<PostResponseDto> posts = postService.searchPosts(keyword);
         return ResponseEntity.ok(posts);
     }
