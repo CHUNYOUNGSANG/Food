@@ -40,7 +40,7 @@ public class CommentLikeController {
      */
     @DeleteMapping("/{commentId}/likes")
     public ResponseEntity<Void> removeLike(
-            @RequestHeader("X-Member_id") Long memberId,
+            @RequestHeader("X-Member-Id") Long memberId,
             @PathVariable Long commentId) {
         commentLikeService.removeLike(memberId, commentId);
         return ResponseEntity.noContent().build();
@@ -68,7 +68,7 @@ public class CommentLikeController {
      */
     @GetMapping("/{commentId}/likes/count")
     public ResponseEntity<CommentLikeCountDto> getLikeCount(
-            @RequestHeader(value = "X-Member_id", required = false) Long memberId,
+            @RequestHeader(value = "X-Member-Id", required = false) Long memberId,
             @PathVariable Long commentId) {
         CommentLikeCountDto likeCountDto = commentLikeService.getLikeCount(memberId, commentId);
         return ResponseEntity.ok(likeCountDto);
