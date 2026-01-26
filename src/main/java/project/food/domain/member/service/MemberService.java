@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.food.domain.member.dto.LoginRequestDto;
 import project.food.domain.member.dto.MemberRequestDto;
 import project.food.domain.member.dto.MemberResponseDto;
 import project.food.domain.member.dto.MemberUpdateDto;
@@ -48,6 +49,31 @@ public class MemberService {
 
         // ResponseDTO 변환 후 반환
         return MemberResponseDto.from(savedMember);
+    }
+
+    /**
+     * 로그인
+     * @param requestDto
+     * @return 회원 정보
+     */
+    @Transactional
+    public MemberResponseDto login(LoginRequestDto requestDto) {
+        log.info("로그인 시도: email = {}", requestDto.getEmail());
+
+        // 이메일로 회원 조회
+        Member member = memberRepository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 비밀번호 검증 (TODO: 추후 BCryptPasswordEncoder 사용)
+        if (!member.getPassword().equals(requestDto.getPassword())) {
+            log.warn("비밀번호 불일치: email = {}", requestDto.getEmail());
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+        
+        log.info("로그인 성공: id = {}, email = {}", member.getId(), member.getEmail());
+        
+        // 회원 정보 반환
+        return MemberResponseDto.from(member);
     }
 
     /**
