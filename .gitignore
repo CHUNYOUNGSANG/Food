@@ -47,3 +47,10 @@ src/main/resources/application-secret.yml
 
 ### macOs ###
 .DS_Store
+
+### 이미지 ###
+/uploads/
+*.jpg
+*.png
+*.gif
+*.webp
