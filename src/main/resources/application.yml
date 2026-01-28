@@ -15,9 +15,15 @@ spring:
         use_sql_comments: true
   servlet:
     multipart:
-      enabled: true
-      max-file-size: 10MB
-      max-request-size: 10MB
+      enabled: true               # 파일 업로드 활성화
+      max-file-size: 10MB         # 파일 하나당 최대 크기
+      max-request-size: 10MB      # 전체 요청 최대 크기 (여러 파일 합계)
+      file-size-threshold: 2KB    # 메모리에 저장할 최소 크기
+
+file:
+  upload:
+    dir: ./uploads/post     # 파일 저장 경로 (프로제트 루트 기준)
+    max-file-count: 10      # 게시글당 최대 파일 개수
 
 logging:
   level:

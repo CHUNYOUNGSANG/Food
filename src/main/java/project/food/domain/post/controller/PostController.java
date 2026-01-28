@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.post.dto.PostRequestDto;
@@ -27,17 +29,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
+@Slf4j
 public class PostController {
 
     private final PostService postService;
 
-    @Operation(summary = "게시글 생성", description = "새로운 게시글을 작성합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "게시글 생성 성공",
-                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "401", description = "인증 실패")
-    })
     /**
      * 게시글 생성
      * POST /api/posts
@@ -45,12 +41,23 @@ public class PostController {
      * @param request 게시글 생성 요청 데이터
      * @return 생성된 게시글 정보 (201 Created)
      */
-    @PostMapping
+    @Operation(summary = "게시글 생성", description = "새로운 게시글을 작성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "게시글 생성 성공",
+                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponseDto> createPost(
             @Parameter(description = "작성자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId,
             @Parameter(description = "게시글 생성 요청 데이터", required = true)
-            @RequestBody PostRequestDto request) {
+            @ModelAttribute PostRequestDto request) {
+
+        log.info("게시글 생성 요청: memberId={}, title={}, imageCount={}",
+                memberId, request.getTitle(),
+                request.getImages() != null ? request.getImages().size() : 0);
 
         PostResponseDto response = postService.createPost(memberId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -105,14 +112,19 @@ public class PostController {
             @ApiResponse(responseCode = "403", description = "수정 권한 없음"),
             @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
     })
-    @PutMapping("/{postId}")
+    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponseDto> updatePost(
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
             @Parameter(description = "수정 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId,
-            @Parameter(description = "게시글 수정 데이터", required = true)
-            @RequestBody PostUpdateDto request) {
+            @Parameter(description = "게시글 수정 데이터 (multipart/form-data)", required = true)
+            @ModelAttribute PostUpdateDto request) {
+
+        log.info("게시글 수정 요청: postId={}, memberId={}, newImageCount={}, deleteImageCount={}",
+                postId, memberId,
+                request.getNewImages() != null ? request.getNewImages().size() : 0,
+                request.getDeleteImageIds() != null ? request.getDeleteImageIds().size() : 0);
 
         PostResponseDto response = postService.updatePost(postId, memberId, request);
         return ResponseEntity.ok(response);
@@ -137,6 +149,8 @@ public class PostController {
             @PathVariable Long postId,
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId) {
+
+        log.info("게시글 삭제 요청: postId={}, memberId={}", postId, memberId );
 
         postService.deletePost(postId, memberId);
         return ResponseEntity.noContent().build();

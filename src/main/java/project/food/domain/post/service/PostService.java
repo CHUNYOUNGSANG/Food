@@ -1,17 +1,23 @@
 package project.food.domain.post.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
 import project.food.domain.post.dto.PostRequestDto;
 import project.food.domain.post.dto.PostResponseDto;
 import project.food.domain.post.dto.PostUpdateDto;
 import project.food.domain.post.entity.Post;
+import project.food.domain.post.entity.PostImage;
+import project.food.domain.post.repository.PostImageRepository;
 import project.food.domain.post.repository.PostRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
+import project.food.global.file.dto.UploadedFileInfo;
+import project.food.global.file.service.FileStorageService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,10 +29,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PostService {
 
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+    private final PostImageRepository postImageRepository;
+    private final FileStorageService fileStorageService;
 
     /**
      * 게시글 생성
@@ -47,10 +56,17 @@ public class PostService {
                 .restaurantAddress(request.getRestaurantAddress())
                 .foodCategory(request.getFoodCategory())
                 .rating(request.getRating())
-                .imageUrl(request.getImageUrl())
                 .build();
 
         Post savedPost = postRepository.save(post);
+
+        // 이미지 저장
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            savePostImages(savedPost, request.getImages());
+        }
+
+        log.info("✅ 게시글 생성 완료: postId={}, memberId={}, imageCount={}",
+                savedPost.getId(), memberId, savedPost.getImages().size());
 
         return PostResponseDto.from(savedPost);
     }
@@ -104,9 +120,21 @@ public class PostService {
                 request.getRestaurantName(),
                 request.getRestaurantAddress(),
                 request.getFoodCategory(),
-                request.getRating(),
-                request.getImageUrl()
+                request.getRating()
         );
+
+        // 삭제할 이미지 처리
+        if (request.getDeleteImageIds() != null && !request.getDeleteImageIds().isEmpty()) {
+            deletePostImages(post, request.getDeleteImageIds());
+        }
+
+        // 새 이미지 추가
+        if (request.getNewImages() != null && !request.getNewImages().isEmpty()) {
+            savePostImages(post, request.getNewImages());
+        }
+
+        log.info("✅ 게시글 수정 완료: postId={}, currentImageCount={}",
+                postId, post.getImages().size());
 
         return PostResponseDto.from(post);
     }
@@ -125,7 +153,18 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
         }
 
+        List<String> storedFileNames = post.getImages().stream()
+                        .map(PostImage::getStoredFileName)
+                        .collect(Collectors.toList());
+
+        if (!storedFileNames.isEmpty()) {
+            fileStorageService.deleteFiles(storedFileNames);
+        }
+
         postRepository.delete(post);
+
+        log.info("✅ 게시글 삭제 완료: postId={}, deletedImages={}",
+                postId, storedFileNames.size());
     }
 
     /**
@@ -162,5 +201,61 @@ public class PostService {
         return posts.stream()
                 .map(PostResponseDto::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 게시글 이미지 저장
+     * @param post 게시글
+     * @param imageFiles 이미지파일
+     */
+    private void savePostImages(Post post, List<MultipartFile> imageFiles) {
+        // 파일저장
+        List<UploadedFileInfo> uploadedFiles = fileStorageService.storeFiles(imageFiles);
+
+        // PostImage 엔티티 생성
+        int displayOrder = post.getImages().size();
+
+        for (UploadedFileInfo fileInfo : uploadedFiles) {
+            PostImage postImage = PostImage.builder()
+                    .post(post)
+                    .originalFileName(fileInfo.getOriginalFileName())
+                    .storedFileName(fileInfo.getStoredFileName())
+                    .filePath(fileInfo.getFilePath())
+                    .fileSize(fileInfo.getFileSize())
+                    .displayOrder(displayOrder++)
+                    .build();
+
+            post.addImage(postImage);
+            postImageRepository.save(postImage);
+        }
+        log.info("✅ 이미지 저장 완료: postId={}, imageCount={}",
+                post.getId(), uploadedFiles.size());
+    }
+
+    /**
+     * 게시글 이미지 삭네
+     * @param post 게시글
+     * @param imageIds 이미지 ID
+     */
+    private void deletePostImages(Post post, List<Long> imageIds) {
+        for (Long imageId : imageIds) {
+            PostImage postImage = postImageRepository.findById(imageId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+            // 게시글 소유 확인
+            if (!postImage.getPost().getId().equals(post.getId())) {
+                throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
+            }
+
+            // 파일 삭제
+            fileStorageService.deleteFile(postImage.getOriginalFileName());
+
+            // 엔티티 삭제
+            post.removeImage(postImage);
+            postImageRepository.delete(postImage);
+        }
+
+        log.info("✅ 이미지 삭제 완료: postId={}, deletedCount={}",
+                post.getId(), imageIds.size());
     }
 }
