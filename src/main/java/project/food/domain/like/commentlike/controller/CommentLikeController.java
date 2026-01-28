@@ -40,7 +40,7 @@ public class CommentLikeController {
     })
     @PostMapping("/{commentId}/likes")
     public ResponseEntity<CommentLikeResponseDto> addLike(
-            @RequestHeader("X-Member-Id") Long memberId,
+            @RequestHeader("Member-Id") Long memberId,
             @PathVariable Long commentId) {
         CommentLikeResponseDto responseDto = commentLikeService.addLike(memberId, commentId);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
@@ -59,7 +59,7 @@ public class CommentLikeController {
     })
     @DeleteMapping("/{commentId}/likes")
     public ResponseEntity<Void> removeLike(
-            @RequestHeader("X-Member-Id") Long memberId,
+            @RequestHeader("Member-Id") Long memberId,
             @PathVariable Long commentId) {
         commentLikeService.removeLike(memberId, commentId);
         return ResponseEntity.noContent().build();
@@ -79,7 +79,7 @@ public class CommentLikeController {
     })
     @PutMapping("/{commentId}/likes/toggle")
     public ResponseEntity<Boolean> likeToggle(
-            @RequestHeader("X-Member-Id") Long memberId,
+            @RequestHeader("Member-Id") Long memberId,
             @PathVariable Long commentId) {
         boolean isLiked = commentLikeService.likeToggle(memberId, commentId);
         return ResponseEntity.ok(isLiked);
@@ -99,7 +99,7 @@ public class CommentLikeController {
     })
     @GetMapping("/{commentId}/likes/count")
     public ResponseEntity<CommentLikeCountDto> getLikeCount(
-            @RequestHeader(value = "X-Member-Id", required = false) Long memberId,
+            @RequestHeader(value = "Member-Id", required = false) Long memberId,
             @PathVariable Long commentId) {
         CommentLikeCountDto likeCountDto = commentLikeService.getLikeCount(memberId, commentId);
         return ResponseEntity.ok(likeCountDto);

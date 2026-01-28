@@ -58,7 +58,7 @@ public class CommentController {
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
             @Parameter(description = "작성자 회원 ID", required = true)
-            @RequestHeader("X-Member-Id") Long memberId,
+            @RequestHeader("Member-Id") Long memberId,
             @Parameter(description = "댓글 내용", required = true)
             @Valid @RequestBody CommentRequestDto requestDto) {
 
@@ -134,7 +134,7 @@ public class CommentController {
             @Parameter(description = "댓글 ID", required = true)
             @PathVariable Long commentId,
             @Parameter(description = "수정 요청자 회원 ID", required = true)
-            @RequestHeader("X-Member-Id") Long memberId,
+            @RequestHeader("Member-Id") Long memberId,
             @Parameter(description = "수정할 댓글 내용", required = true)
             @Valid @RequestBody CommentRequestDto requestDto) {
 
@@ -164,7 +164,7 @@ public class CommentController {
             @Parameter(description = "댓글 ID", required = true)
             @PathVariable Long commentId,
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
-            @RequestHeader("X-Member-Id") Long memberId) {
+            @RequestHeader("Member-Id") Long memberId) {
 
         commentService.deleteComment(commentId, memberId);
         return ResponseEntity.noContent().build();
