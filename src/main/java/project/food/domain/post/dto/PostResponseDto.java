@@ -4,9 +4,12 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import project.food.domain.post.entity.Post;
+import project.food.domain.post.entity.PostImage;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 게시글 응답 DTO
@@ -70,7 +73,7 @@ public class PostResponseDto {
      * 평점 (0.0 ~ 5.0)
      */
     @Schema(description = "평점 (0.0 ~ 5.0)", example = "4.5")
-    private BigDecimal rating;
+    private Double rating;
 
     /**
      * 예: 4.5점
@@ -89,6 +92,9 @@ public class PostResponseDto {
      */
     @Schema(description = "조회수", example = "150")
     private Integer viewCount;
+
+    @Schema(description = "게시글 이미지 목록")
+    private List<ImageInfo> images;
 
     /**
      * 작성 시간
@@ -121,11 +127,45 @@ public class PostResponseDto {
                 .foodCategory(post.getFoodCategory())
                 .rating(post.getRating())
                 .ratingText(post.getRatingAsString())
-                .imageUrl(post.getImageUrl())
                 .viewCount(post.getViewCount())
+                .images(post.getImages().stream()
+                        .map(ImageInfo::from)
+                        .collect(Collectors.toList()))
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();
 
+    }
+
+    @Schema(description = "이미지 정보")
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ImageInfo {
+        @Schema(description = "이미지 ID", example = "1")
+        private Long id;
+
+        @Schema(description = "원본 파일명", example = "food.jpg")
+        private String originalFileName;
+
+        @Schema(description = "이미지 URL", example = "/uploads/post/abc-def.jpg")
+        private String fileUrl;
+
+        @Schema(description = "파일 크기 (bytes)", example = "1024000")
+        private Long fileSize;
+
+        @Schema(description = "표시 순서", example = "0")
+        private Integer displayOrder;
+
+        public static ImageInfo from(PostImage postImage) {
+            return ImageInfo.builder()
+                    .id(postImage.getId())
+                    .originalFileName(postImage.getOriginalFileName())
+                    .fileUrl("/uploads/post/" + postImage.getStoredFileName())
+                    .fileSize(postImage.getFileSize())
+                    .displayOrder(postImage.getDisplayOrder())
+                    .build();
+        }
     }
 }

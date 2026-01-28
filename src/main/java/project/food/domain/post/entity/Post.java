@@ -76,14 +76,8 @@ public class Post extends BaseTimeEntity {
      * - 작성자가 매긴 평점
      * - 0.0 ~ 5.0 범위
      */
-    @Column(name = "rating", precision = 2, scale = 1)
-    private BigDecimal rating;
-
-    /**
-     * 맛집 사진 URL
-     */
-    @Column(name = "image_url", length = 1000)
-    private String imageUrl;
+    @Column(name = "rating")
+    private Double rating;
 
     /**
      * 조회수
@@ -102,6 +96,11 @@ public class Post extends BaseTimeEntity {
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC")    // 표시 순서대로 정렬
+    @Builder.Default
+    private List<PostImage> images = new ArrayList<>();
+
     /**
      * 게시글 수정
      * @param title 수정할 제목
@@ -110,19 +109,59 @@ public class Post extends BaseTimeEntity {
      * @param restaurantAddress 수정할 맛집 주소
      * @param foodCategory 수정할 음식 카테고리
      * @param rating 수정할 평점
-     * @param imageUrl 수정할 이미지 URL
      */
 
     public void updatePost(String title, String content, String restaurantName,
                            String restaurantAddress, String foodCategory,
-                           BigDecimal rating, String imageUrl) {
+                           Double rating) {
         this.title = title;
         this.content = content;
         this.restaurantName = restaurantName;
         this.restaurantAddress = restaurantAddress;
         this.foodCategory = foodCategory;
         this.rating = rating;
-        this.imageUrl = imageUrl;
+    }
+
+    /**
+     * 이미지 추가
+     * 양방향 연관관계 설정
+     * @param image 이미지
+     */
+    public void addImage(PostImage image) {
+        this.images.add(image);
+        image.setPost(this);
+    }
+
+    /**
+     * 이미지 제거
+     * 양방향 연관관계 해제
+     * @param image 이미지
+     */
+    public void removeImage(PostImage image) {
+        this.images.remove(image);
+    }
+
+    /**
+     * 모든 이미지 제거
+     */
+    public void clearImages() {
+        this.images.clear();
+    }
+
+    /**
+     * 이미지 개수 조회
+     * @return 이미지 개수
+     */
+    public int getImageCount() {
+        return this.images.size();
+    }
+
+    /**
+     * 대표 이미지 조회
+     * @return 첫 번째 이미지
+     */
+    public PostImage getThumbnailImage() {
+        return this.images.isEmpty() ? null : this.images.get(0);
     }
 
     /**
@@ -148,9 +187,9 @@ public class Post extends BaseTimeEntity {
      * @return 평점 문자열 (예: "4.5점")
      */
     public String getRatingAsString() {
-        return this.rating != null ? this.rating + "점" : "평점 없음";
+        return this.rating != null ?
+                String.format("%.1f점", this.rating) : "평점 없음";
     }
-
     /**
      * 댓글 개수 조회
      * @return 댓글 개수

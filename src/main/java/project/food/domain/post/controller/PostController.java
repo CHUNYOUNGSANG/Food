@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.post.dto.PostRequestDto;
@@ -27,17 +29,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
+@Slf4j
 public class PostController {
 
     private final PostService postService;
 
-    @Operation(summary = "게시글 생성", description = "새로운 게시글을 작성합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "게시글 생성 성공",
-                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "401", description = "인증 실패")
-    })
     /**
      * 게시글 생성
      * POST /api/posts
@@ -45,14 +41,32 @@ public class PostController {
      * @param request 게시글 생성 요청 데이터
      * @return 생성된 게시글 정보 (201 Created)
      */
-    @PostMapping
+    @Operation(summary = "게시글 생성", description = "새로운 게시글을 작성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "게시글 생성 성공",
+                    content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "401", description = "인증 실패")
+    })
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponseDto> createPost(
             @Parameter(description = "작성자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId,
             @Parameter(description = "게시글 생성 요청 데이터", required = true)
-            @RequestBody PostRequestDto request) {
+            @ModelAttribute PostRequestDto request) {
+
+        log.info("게시글 생성 요청: memberId={}, title={}, restaurantName={}, category={}, rating={}, imageCount={}",
+                memberId,
+                request.getTitle(),
+                request.getRestaurantName(),
+                request.getFoodCategory(),
+                request.getRating(),
+                request.getImages() != null ? request.getImages().size() : 0);
 
         PostResponseDto response = postService.createPost(memberId, request);
+
+        log.info("✅ 게시글 생성 완료: postId={}, memberId={}", response.getId(), memberId);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -66,7 +80,13 @@ public class PostController {
             content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping
     public ResponseEntity<List<PostResponseDto>> getAllPosts() {
+
+        log.info("게시글 전체 목록 조회 요청");
+
         List<PostResponseDto> posts = postService.getAllPosts();
+
+        log.info("✅ 게시글 전체 목록 조회 완료: postCount={}", posts.size());
+
         return ResponseEntity.ok(posts);
     }
 
@@ -86,7 +106,14 @@ public class PostController {
     public ResponseEntity<PostResponseDto> getPost(
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId) {
+
+        log.info("게시글 상세 조회 요청: postId={}", postId);
+
         PostResponseDto response = postService.getPost(postId);
+
+        log.info("✅ 게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
+                postId, response.getTitle(), response.getViewCount());
+
         return ResponseEntity.ok(response);
     }
 
@@ -105,16 +132,26 @@ public class PostController {
             @ApiResponse(responseCode = "403", description = "수정 권한 없음"),
             @ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
     })
-    @PutMapping("/{postId}")
+    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponseDto> updatePost(
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
             @Parameter(description = "수정 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId,
-            @Parameter(description = "게시글 수정 데이터", required = true)
-            @RequestBody PostUpdateDto request) {
+            @Parameter(description = "게시글 수정 데이터 (multipart/form-data)", required = true)
+            @ModelAttribute PostUpdateDto request) {
+
+        log.info("게시글 수정 요청: postId={}, memberId={}, title={}, newImageCount={}, deleteImageCount={}",
+                postId,
+                memberId,
+                request.getTitle(),
+                request.getNewImages() != null ? request.getNewImages().size() : 0,
+                request.getDeleteImageIds() != null ? request.getDeleteImageIds().size() : 0);
 
         PostResponseDto response = postService.updatePost(postId, memberId, request);
+
+        log.info("✅ 게시글 수정 완료: postId={}, memberId={}", postId, memberId);
+
         return ResponseEntity.ok(response);
     }
 
@@ -138,7 +175,12 @@ public class PostController {
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId) {
 
+        log.info("게시글 삭제 요청: postId={}, memberId={}", postId, memberId);
+
         postService.deletePost(postId, memberId);
+
+        log.info("✅ 게시글 삭제 완료: postId={}, memberId={}", postId, memberId);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -158,7 +200,14 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> getPostsByMember(
             @Parameter(description = "회원 ID", required = true)
             @PathVariable Long memberId) {
+
+        log.info("회원별 게시글 조회 요청: memberId={}", memberId);
+
         List<PostResponseDto> posts = postService.getPostsByMember(memberId);
+
+        log.info("✅ 회원별 게시글 조회 완료: memberId={}, postCount={}",
+                memberId, posts.size());
+
         return ResponseEntity.ok(posts);
     }
 
@@ -175,9 +224,17 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> getPostsByCategory(
             @Parameter(description = "음식 카테고리 (예: 한식, 중식, 양식)", required = true)
             @PathVariable String foodCategory) {
+
+        log.info("카테고리별 게시글 조회 요청: category={}", foodCategory);
+
         List<PostResponseDto> posts = postService.getPostsByCategory(foodCategory);
+
+        log.info("✅ 카테고리별 게시글 조회 완료: category={}, postCount={}",
+                foodCategory, posts.size());
+
         return ResponseEntity.ok(posts);
     }
+
 
     /**
      * 게시글 검색
@@ -192,7 +249,14 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> searchPosts(
             @Parameter(description = "검색 키워드", required = true, example = "맛집")
             @RequestParam String keyword) {
+
+        log.info("게시글 검색 요청: keyword={}", keyword);
+
         List<PostResponseDto> posts = postService.searchPosts(keyword);
+
+        log.info("✅ 게시글 검색 완료: keyword={}, resultCount={}",
+                keyword, posts.size());
+
         return ResponseEntity.ok(posts);
     }
 }

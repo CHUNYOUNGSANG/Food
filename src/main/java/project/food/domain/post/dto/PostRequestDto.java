@@ -1,17 +1,20 @@
 package project.food.domain.post.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Schema(description = "게시글 생성 요청 DTO")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -54,12 +57,12 @@ public class PostRequestDto {
      * 평점 (0.0 ~ 5.0)
      */
     @Schema(description = "평점 (0.0 ~ 5.0)", example = "4.5")
-    private BigDecimal rating;
+    @Min(value = 0, message = "평점은 0.0 이상이어야 합니다.")
+    @Max(value = 5, message = "평점은 5.0 이하여야 합니다.")
+    private Double rating;
 
-    /**
-     * 이미지 URL
-     */
-    @Schema(description = "이미지 URL", example = "https://example.com/image.jpg")
-    private String imageUrl;
+    @Schema(description = "업로드할 이미지 파일 목록 (최대 10개)")
+    @Builder.Default
+    private List<MultipartFile> images = new ArrayList<>();
 
 }
