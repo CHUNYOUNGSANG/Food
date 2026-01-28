@@ -55,11 +55,18 @@ public class PostController {
             @Parameter(description = "게시글 생성 요청 데이터", required = true)
             @ModelAttribute PostRequestDto request) {
 
-        log.info("게시글 생성 요청: memberId={}, title={}, imageCount={}",
-                memberId, request.getTitle(),
+        log.info("게시글 생성 요청: memberId={}, title={}, restaurantName={}, category={}, rating={}, imageCount={}",
+                memberId,
+                request.getTitle(),
+                request.getRestaurantName(),
+                request.getFoodCategory(),
+                request.getRating(),
                 request.getImages() != null ? request.getImages().size() : 0);
 
         PostResponseDto response = postService.createPost(memberId, request);
+
+        log.info("✅ 게시글 생성 완료: postId={}, memberId={}", response.getId(), memberId);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -73,7 +80,13 @@ public class PostController {
             content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping
     public ResponseEntity<List<PostResponseDto>> getAllPosts() {
+
+        log.info("게시글 전체 목록 조회 요청");
+
         List<PostResponseDto> posts = postService.getAllPosts();
+
+        log.info("✅ 게시글 전체 목록 조회 완료: postCount={}", posts.size());
+
         return ResponseEntity.ok(posts);
     }
 
@@ -93,7 +106,14 @@ public class PostController {
     public ResponseEntity<PostResponseDto> getPost(
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId) {
+
+        log.info("게시글 상세 조회 요청: postId={}", postId);
+
         PostResponseDto response = postService.getPost(postId);
+
+        log.info("✅ 게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
+                postId, response.getTitle(), response.getViewCount());
+
         return ResponseEntity.ok(response);
     }
 
@@ -121,12 +141,17 @@ public class PostController {
             @Parameter(description = "게시글 수정 데이터 (multipart/form-data)", required = true)
             @ModelAttribute PostUpdateDto request) {
 
-        log.info("게시글 수정 요청: postId={}, memberId={}, newImageCount={}, deleteImageCount={}",
-                postId, memberId,
+        log.info("게시글 수정 요청: postId={}, memberId={}, title={}, newImageCount={}, deleteImageCount={}",
+                postId,
+                memberId,
+                request.getTitle(),
                 request.getNewImages() != null ? request.getNewImages().size() : 0,
                 request.getDeleteImageIds() != null ? request.getDeleteImageIds().size() : 0);
 
         PostResponseDto response = postService.updatePost(postId, memberId, request);
+
+        log.info("✅ 게시글 수정 완료: postId={}, memberId={}", postId, memberId);
+
         return ResponseEntity.ok(response);
     }
 
@@ -150,9 +175,12 @@ public class PostController {
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
             @RequestHeader("Member-Id") Long memberId) {
 
-        log.info("게시글 삭제 요청: postId={}, memberId={}", postId, memberId );
+        log.info("게시글 삭제 요청: postId={}, memberId={}", postId, memberId);
 
         postService.deletePost(postId, memberId);
+
+        log.info("✅ 게시글 삭제 완료: postId={}, memberId={}", postId, memberId);
+
         return ResponseEntity.noContent().build();
     }
 
@@ -172,7 +200,14 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> getPostsByMember(
             @Parameter(description = "회원 ID", required = true)
             @PathVariable Long memberId) {
+
+        log.info("회원별 게시글 조회 요청: memberId={}", memberId);
+
         List<PostResponseDto> posts = postService.getPostsByMember(memberId);
+
+        log.info("✅ 회원별 게시글 조회 완료: memberId={}, postCount={}",
+                memberId, posts.size());
+
         return ResponseEntity.ok(posts);
     }
 
@@ -189,9 +224,17 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> getPostsByCategory(
             @Parameter(description = "음식 카테고리 (예: 한식, 중식, 양식)", required = true)
             @PathVariable String foodCategory) {
+
+        log.info("카테고리별 게시글 조회 요청: category={}", foodCategory);
+
         List<PostResponseDto> posts = postService.getPostsByCategory(foodCategory);
+
+        log.info("✅ 카테고리별 게시글 조회 완료: category={}, postCount={}",
+                foodCategory, posts.size());
+
         return ResponseEntity.ok(posts);
     }
+
 
     /**
      * 게시글 검색
@@ -206,7 +249,14 @@ public class PostController {
     public ResponseEntity<List<PostResponseDto>> searchPosts(
             @Parameter(description = "검색 키워드", required = true, example = "맛집")
             @RequestParam String keyword) {
+
+        log.info("게시글 검색 요청: keyword={}", keyword);
+
         List<PostResponseDto> posts = postService.searchPosts(keyword);
+
+        log.info("✅ 게시글 검색 완료: keyword={}, resultCount={}",
+                keyword, posts.size());
+
         return ResponseEntity.ok(posts);
     }
 }
