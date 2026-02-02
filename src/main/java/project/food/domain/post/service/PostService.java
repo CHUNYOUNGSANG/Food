@@ -323,7 +323,7 @@ public class PostService {
     }
 
     /**
-     * 게시글 이미지 삭네
+     * 게시글 이미지 삭제
      * @param post 게시글
      * @param imageIds 이미지 ID
      */
