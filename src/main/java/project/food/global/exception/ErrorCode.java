@@ -50,7 +50,11 @@ public enum ErrorCode {
 
     /** 좋아요 관련 에러 (L: Like) */
     ALREADY_LIKED(HttpStatus.CONFLICT, "L001", "이미 좋아요를 눌렀습니다."),
-    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "L002", "좋아요를 찾을 수 없습니다.");
+    LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "L002", "좋아요를 찾을 수 없습니다."),
+
+    /** 태그 관련 에러 (T: Tag) */
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "태그를 찾을 수 없습니다."),
+    DUPLICATE_TAG_NAME(HttpStatus.CONFLICT, "T002", "이미 존재하는 태그 이름입니다.");
 
     private final HttpStatus status;
     private final String code;

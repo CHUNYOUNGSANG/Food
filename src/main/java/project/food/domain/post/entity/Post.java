@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import project.food.domain.comment.entity.Comment;
 import project.food.domain.member.entity.Member;
+import project.food.domain.tag.entity.PostTag;
+import project.food.domain.tag.entity.Tag;
 import project.food.global.common.BaseTimeEntity;
 
 import java.math.BigDecimal;
@@ -88,7 +90,7 @@ public class Post extends BaseTimeEntity {
     private Integer viewCount = 0;
 
     /**
-     * 댯굴 목록 (1:N)
+     * 댓굴 목록 (1:N)
      * - 게시글 삭제 시 댓글도 함께 삭제 (cascade = ALl)
      * - 연관관계가 끊긴 댓글 자동 삭제 (orphanRemoval = true)
      */
@@ -96,10 +98,20 @@ public class Post extends BaseTimeEntity {
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
+    /**
+     * 이미지
+     */
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC")    // 표시 순서대로 정렬
     @Builder.Default
     private List<PostImage> images = new ArrayList<>();
+
+    /**
+     * 태그 목록 (1:N)
+     */
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<PostTag> postTags = new ArrayList<>();
 
     /**
      * 게시글 수정
@@ -120,6 +132,29 @@ public class Post extends BaseTimeEntity {
         this.restaurantAddress = restaurantAddress;
         this.foodCategory = foodCategory;
         this.rating = rating;
+    }
+
+    /**
+     * 태그 추가
+     * @param postTag 태그
+     */
+    public void addPostTag(PostTag postTag) {
+        this.postTags.add(postTag);
+    }
+
+    /**
+     * 태그 제거
+     * @param postTag 태그
+     */
+    public void removePostTag(PostTag postTag) {
+        this.postTags.remove(postTag);
+    }
+
+    /**
+     * 태그 전체 제거
+     */
+    public void clearPostTag() {
+        this.postTags.clear();
     }
 
     /**
