@@ -96,6 +96,12 @@ public class PostResponseDto {
     @Schema(description = "게시글 이미지 목록")
     private List<ImageInfo> images;
 
+    @Schema(description = "위도")
+    private Double latitude;
+
+    @Schema(description = "경도")
+    private Double longitude;
+
     /**
      * 작성 시간
      */
@@ -131,6 +137,8 @@ public class PostResponseDto {
                 .images(post.getImages().stream()
                         .map(ImageInfo::from)
                         .collect(Collectors.toList()))
+                .latitude(post.getLatitude())
+                .longitude(post.getLongitude())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();

@@ -14,12 +14,15 @@ import project.food.domain.post.entity.Post;
 import project.food.domain.post.entity.PostImage;
 import project.food.domain.post.repository.PostImageRepository;
 import project.food.domain.post.repository.PostRepository;
+import project.food.global.api.kakao.dto.KakaoAddressResponse;
+import project.food.global.api.kakao.service.KakaoMapService;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
 import project.food.global.file.service.FileStorageService;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +39,7 @@ public class PostService {
     private final MemberRepository memberRepository;
     private final PostImageRepository postImageRepository;
     private final FileStorageService fileStorageService;
+    private final KakaoMapService kakaoMapService;
 
     /**
      * 게시글 생성
@@ -54,12 +58,34 @@ public class PostService {
                     return new CustomException(ErrorCode.MEMBER_NOT_FOUND);
                 });
 
+        Double latitude = null;
+        Double longitude = null;
+
+        if (request.getRestaurantAddress() != null && !request.getRestaurantAddress().isBlank()) {
+            try {
+                KakaoAddressResponse response = kakaoMapService
+                        .getCoordinateByAddress(request.getRestaurantAddress());
+
+                latitude = response.getLatitude();
+                longitude = response.getLongitude();
+
+                log.debug("✅좌표 조회 성공: address={}, lat={}, lon={}",
+                        request.getRestaurantAddress(), latitude, longitude);
+
+            } catch (Exception e) {
+                log.warn("❌좌표 조회 실패 (게시글 생성은 계속): address={}, error={}",
+                        request.getRestaurantAddress(), e.getMessage());
+            }
+        }
+
         Post post = Post.builder()
                 .member(member)
                 .title(request.getTitle())
                 .content(request.getContent())
                 .restaurantName(request.getRestaurantName())
                 .restaurantAddress(request.getRestaurantAddress())
+                .latitude(latitude)
+                .longitude(longitude)
                 .foodCategory(request.getFoodCategory())
                 .rating(request.getRating())
                 .build();
@@ -150,6 +176,28 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
         }
 
+        Double newLatitude = post.getLatitude();
+        Double newLongitude = post.getLongitude();
+
+        boolean addressChanged = !Objects.equals(post.getRestaurantAddress(), request.getRestaurantAddress());
+
+        if (addressChanged && request.getRestaurantAddress() != null) {
+            try {
+                KakaoAddressResponse response = kakaoMapService
+                        .getCoordinateByAddress(request.getRestaurantAddress());
+
+                newLatitude = response.getLatitude();
+                newLongitude = response.getLongitude();
+
+                log.debug("✅좌표 재조회 성공: newAddress={}, lat={}, lon={}",
+                        request.getRestaurantAddress(), newLatitude, newLongitude);
+
+            } catch (Exception e) {
+                log.warn("❌좌표 재조회 실패: address={}, error={}",
+                        request.getRestaurantAddress(), e.getMessage());
+            }
+        }
+
         String oldTitle = post.getTitle();
         post.updatePost(
                 request.getTitle(),
@@ -157,7 +205,9 @@ public class PostService {
                 request.getRestaurantName(),
                 request.getRestaurantAddress(),
                 request.getFoodCategory(),
-                request.getRating()
+                request.getRating(),
+                newLatitude,
+                newLongitude
         );
 
         log.debug("게시글 정보 수정 완료: postId={}, titleChanged={}",
@@ -259,6 +309,37 @@ public class PostService {
         return posts.stream()
                 .map(PostResponseDto::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 주소로 좌표 조회
+     * - 실패 시 null 반환 (예외 발생 X)
+     *
+     * @param address 주소
+     * @return 좌표 배열 [latitude, longitude] 또는 [null, null]
+     */
+    private Double[] getCoordinates(String address) {
+        if (address == null || address.isBlank()) {
+            return new Double[]{null, null};
+        }
+
+        try {
+            KakaoAddressResponse response = kakaoMapService
+                    .getCoordinateByAddress(address);
+
+            Double latitude = response.getLatitude();
+            Double longitude = response.getLongitude();
+
+            log.debug("✅좌표 조회 성공: address={}, lat={}, lng={}",
+                    address, latitude, longitude);
+
+            return new Double[]{latitude, longitude};
+
+        } catch (Exception e) {
+            log.warn("❌좌표 조회 실패: address={}, error={}",
+                    address, e.getMessage());
+            return new Double[]{null, null};
+        }
     }
 
     /**
