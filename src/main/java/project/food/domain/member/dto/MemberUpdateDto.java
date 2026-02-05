@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,10 +20,10 @@ public class MemberUpdateDto {
     @Size(min = 2, max = 50, message = "닉네임은 2자 이상 50자 이하여야 합니다.")
     private String nickname;
 
-    private String profileImage;
+    private MultipartFile profileImage;
 
     @Builder
-    public MemberUpdateDto(String name, String nickname, String profileImage) {
+    public MemberUpdateDto(String name, String nickname, MultipartFile profileImage) {
         this.name = name;
         this.nickname = nickname;
         this.profileImage = profileImage;

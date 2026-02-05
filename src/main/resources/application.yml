@@ -22,7 +22,7 @@ spring:
 
 file:
   upload:
-    dir: ./uploads/post     # 파일 저장 경로 (프로제트 루트 기준)
+    dir: ./uploads    # 파일 저장 경로 (프로제트 루트 기준)
     max-file-count: 10      # 게시글당 최대 파일 개수
 
 logging:

@@ -10,6 +10,8 @@ import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
+import project.food.global.file.dto.UploadedFileInfo;
+import project.food.global.file.service.FileStorageService;
 import project.food.global.jwt.JwtTokenProvider;
 
 @Service
@@ -21,6 +23,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final FileStorageService fileStorage;
 
     /**
      * 회원가입
@@ -42,8 +45,15 @@ public class MemberService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
-        // Entity 생성 및 저장
-        Member member = requestDto.toEntity(encodedPassword);
+        // ✅ 여기 추가
+        String profileImageUrl = null;
+        if (requestDto.getProfileImage() != null && !requestDto.getProfileImage().isEmpty()) {
+            UploadedFileInfo fileInfo = fileStorage.saveProfileImage(requestDto.getProfileImage());
+            profileImageUrl = fileInfo.getFileUrl();
+        }
+
+        // Entity 생성 시 URL 전달
+        Member member = requestDto.toEntity(encodedPassword, profileImageUrl);
         Member savedMember = memberRepository.save(member);
 
         log.info("회원가입 완료: id = {}, email = {}", savedMember.getId(), savedMember.getEmail());
@@ -154,12 +164,20 @@ public class MemberService {
             }
         }
 
+        String profileImageUrl = member.getProfileImage();
+        if (updateDto.getProfileImage() != null && !updateDto.getProfileImage().isEmpty()) {
+            UploadedFileInfo fileInfo = fileStorage.saveProfileImage(updateDto.getProfileImage());
+            profileImageUrl = fileInfo.getFileUrl();
+        }
+
+
         // 회원 정보 수정
         member.updateProfile(
                 updateDto.getName(),
                 updateDto.getNickname(),
-                updateDto.getProfileImage()
+                profileImageUrl
         );
+
 
         log.info("회원 정보 수정 완료: id = {}, nickname = {}", id, updateDto.getNickname());
 

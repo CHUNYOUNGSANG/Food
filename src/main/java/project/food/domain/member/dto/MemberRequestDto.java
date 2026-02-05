@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 import project.food.domain.member.entity.Member;
 
 @Getter
@@ -33,11 +34,11 @@ public class MemberRequestDto {
     @Size(min = 2, max = 50, message = "닉네임은 2자 이상 50자 이하여야 합니다.")
     private String nickname;
 
-    private String profileImage;
+    private MultipartFile profileImage;
 
     @Builder
     public MemberRequestDto(String email, String password, String name,
-                            String nickname, String profileImage) {
+                            String nickname, MultipartFile profileImage) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -45,13 +46,13 @@ public class MemberRequestDto {
         this.profileImage = profileImage;
     }
 
-    public Member toEntity(String encodedPassword) {
+    public Member toEntity(String encodedPassword, String profileImageUrl) {
         return Member.builder()
                 .email(this.email)
                 .password(encodedPassword)
                 .name(this.name)
                 .nickname(this.nickname)
-                .profileImage(this.profileImage)
+                .profileImage(profileImageUrl)
                 .build();
     }
 }

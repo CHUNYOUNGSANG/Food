@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 import project.food.global.common.BaseTimeEntity;
 import project.food.global.enums.Role;
 
@@ -33,7 +34,8 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
-    @Column(length = 700)
+    @Lob
+    @Column(name = "profile_image", columnDefinition = "LONGTEXT")
     private String profileImage;
 
     @Enumerated(EnumType.STRING)

@@ -42,7 +42,8 @@ public class SecurityConfig {
                                 "/api/members/check-email",
                                 "/api/members/check-nickname",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/uploads/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/posts/**",
