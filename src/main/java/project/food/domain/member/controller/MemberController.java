@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.member.dto.*;
@@ -34,8 +35,8 @@ public class MemberController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터 (유효성 검사 실패)"),
             @ApiResponse(responseCode = "409", description = "이미 존재하는 이메일 또는 닉네임")
     })
-    @PostMapping
-    public ResponseEntity<MemberResponseDto> signUp(@Valid @RequestBody MemberRequestDto requestDto) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MemberResponseDto> signUp(@Valid @ModelAttribute MemberRequestDto requestDto) {
         MemberResponseDto responseDto = memberService.signUp(requestDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
@@ -105,13 +106,14 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
             @ApiResponse(responseCode = "409", description = "이미 존재하는 닉네임")
     })
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MemberResponseDto> updateMember(
             @PathVariable Long id,
-            @Valid @RequestBody MemberUpdateDto updateDto) {
+            @Valid @ModelAttribute MemberUpdateDto updateDto) {
         MemberResponseDto responseDto = memberService.updateMember(id, updateDto);
         return ResponseEntity.ok(responseDto);
     }
+
 
     /**
      * 비밀번호 변경

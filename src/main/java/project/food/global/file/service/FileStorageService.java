@@ -31,43 +31,44 @@ public class FileStorageService {
     /**
      * 단일 파일 저장
      */
-    public UploadedFileInfo storeFile(MultipartFile file) {
-
-        log.debug("파일 저장 시작: originalFileName={}, size ={}, bytes", file.getOriginalFilename(), file.getSize());
-
+    private UploadedFileInfo storeFile(MultipartFile file, String subDir) {
         validateFile(file);
 
         String originalFileName = file.getOriginalFilename();
         String storedFileName = generateStoredFileName(originalFileName);
 
-        Path uploadPath = Paths.get(fileStorageConfig.getUploadDir())
+        Path baseDir = Paths.get(fileStorageConfig.getUploadDir())
                 .toAbsolutePath()
                 .normalize();
+        Path uploadPath = baseDir.resolve(subDir);
 
         try {
             Files.createDirectories(uploadPath);
             Path targetPath = uploadPath.resolve(storedFileName);
-            Files.copy(file.getInputStream(), targetPath,
-                    StandardCopyOption.REPLACE_EXISTING);
-
-            log.info("✅ 파일 저장 성공: originalFileName={}, storedFileName={}, size={}",
-                    originalFileName, storedFileName, file.getSize());
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             return UploadedFileInfo.builder()
                     .originalFileName(originalFileName)
                     .storedFileName(storedFileName)
                     .filePath(targetPath.toString())
                     .fileSize(file.getSize())
-                    .fileUrl("/uploads/post/" + storedFileName)
+                    .fileUrl("/uploads/" + subDir + "/" + storedFileName)
                     .build();
 
         } catch (IOException e) {
-            log.error("❌ 파일 저장 실패: originalFileName={}, error={}",
-                    originalFileName, e.getMessage(), e);
             throw new FileUploadException(ErrorCode.FILE_UPLOAD_FAILED,
                     "파일 저장 중 오류: " + originalFileName);
         }
     }
+
+    public UploadedFileInfo savePostImage(MultipartFile file) {
+        return storeFile(file, "post");
+    }
+
+    public UploadedFileInfo saveProfileImage(MultipartFile file) {
+        return storeFile(file, "profile");
+    }
+
 
     /**
      * 여러 파일 저장
@@ -89,7 +90,7 @@ public class FileStorageService {
 
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                UploadedFileInfo fileInfo = storeFile(file);
+                UploadedFileInfo fileInfo = savePostImage(file);
                 uploadedFiles.add(fileInfo);
                 successCount++;
             } else {
