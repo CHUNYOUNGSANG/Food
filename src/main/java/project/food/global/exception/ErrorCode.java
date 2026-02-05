@@ -54,7 +54,13 @@ public enum ErrorCode {
 
     /** 태그 관련 에러 (T: Tag) */
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "T001", "태그를 찾을 수 없습니다."),
-    DUPLICATE_TAG_NAME(HttpStatus.CONFLICT, "T002", "이미 존재하는 태그 이름입니다.");
+    DUPLICATE_TAG_NAME(HttpStatus.CONFLICT, "T002", "이미 존재하는 태그 이름입니다."),
+
+    /** 외부 API 관련 에러 (K: Kakao) */
+    KAKAO_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "K001", "카카오 API 호출에 실패했습니다."),
+    KAKAO_ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "K002", "해당 주소의 좌표를 찾을 수 없습니다."),
+    KAKAO_API_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "K003", "카카오 API 인증에 실패했습니다."),
+    KAKAO_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "K004", "카카오 API 호출 한도를 초과했습니다");
 
     private final HttpStatus status;
     private final String code;

@@ -90,6 +90,20 @@ public class Post extends BaseTimeEntity {
     private Integer viewCount = 0;
 
     /**
+     * 맛집 위도
+     * - 지도 표시용 좌표
+     */
+    @Column(name = "latitude")
+    private Double latitude;
+
+    /**
+     * 맛집 경도
+     * - 지도 표시용 좌표
+     */
+    @Column(name = "longitude")
+    private Double longitude;
+
+    /**
      * 댓굴 목록 (1:N)
      * - 게시글 삭제 시 댓글도 함께 삭제 (cascade = ALl)
      * - 연관관계가 끊긴 댓글 자동 삭제 (orphanRemoval = true)
@@ -121,17 +135,21 @@ public class Post extends BaseTimeEntity {
      * @param restaurantAddress 수정할 맛집 주소
      * @param foodCategory 수정할 음식 카테고리
      * @param rating 수정할 평점
+     * @param latitude 수정할 위도
+     * @param longitude 수정할 경도
      */
 
     public void updatePost(String title, String content, String restaurantName,
                            String restaurantAddress, String foodCategory,
-                           Double rating) {
+                           Double rating, Double latitude, Double longitude) {
         this.title = title;
         this.content = content;
         this.restaurantName = restaurantName;
         this.restaurantAddress = restaurantAddress;
         this.foodCategory = foodCategory;
         this.rating = rating;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     /**
@@ -218,7 +236,6 @@ public class Post extends BaseTimeEntity {
     /**
      * 평점 문자열 반환
      * - 화면 표시용
-     *
      * @return 평점 문자열 (예: "4.5점")
      */
     public String getRatingAsString() {
@@ -236,7 +253,6 @@ public class Post extends BaseTimeEntity {
     /**
      * 댓글 추가
      * (양방향 연관관계 설정)
-     *
      * @param comment 추가할 댓글
      */
     public void addComment(Comment comment) {
@@ -246,10 +262,28 @@ public class Post extends BaseTimeEntity {
     /**
      * 댓글 제거
      * (양방향 연관관계 해제)
-     *
      * @param comment 제거할 댓글
      */
     public void removeComment(Comment comment) {
         this.comments.remove(comment);
+    }
+
+    /**
+     * 좌표 정보 존재 여부 확인
+     * @return 좌표가 모두 있으면 true
+     */
+    public boolean hasCoordinates() {
+        return this.latitude != null && this.longitude != null;
+    }
+
+    /**
+     * 좌표 업데이트
+     * - 주소 변경 시 카카오 API 조회 후 호출
+     * @param latitude 위도
+     * @param longitude 경도
+     */
+    public void updateCoordinates(Double latitude, Double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 }
