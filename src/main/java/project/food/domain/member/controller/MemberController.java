@@ -114,6 +114,25 @@ public class MemberController {
     }
 
     /**
+     * 비밀번호 변경
+     * PUT /api/members/{id}/password
+     */
+    @Operation(summary = "비밀번호 변경", description = "기존 비밀번호를 확인한 후 새 비밀번호로 변경합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터 (유효성 검사 실패)"),
+            @ApiResponse(responseCode = "401", description = "기존 비밀번호 불일치"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @PutMapping("/{id}/password")
+    public ResponseEntity<Void> updatePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody PasswordChangeRequestDto requestDto) {
+        memberService.updatePassword(id, requestDto.getOldPassword(), requestDto.getNewPassword());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * 회원 탈퇴
      * DELETE /api/members/{id}
      */
