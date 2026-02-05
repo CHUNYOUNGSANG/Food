@@ -43,6 +43,11 @@ management:
     health:
       show-details: when-authorized
 
+jwt:
+  secret: ${jwt.secret}
+  access-token-expiration: 1800000
+  refresh-token-expiration: 604800000
+
 springdoc:
   api-docs:
     path: /v3/api-docs

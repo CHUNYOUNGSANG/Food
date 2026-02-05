@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.post.dto.PostRequestDto;
 import project.food.domain.post.dto.PostResponseDto;
@@ -51,7 +52,7 @@ public class PostController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponseDto> createPost(
             @Parameter(description = "작성자 회원 ID", required = true)
-            @RequestHeader("Member-Id") Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @Parameter(description = "게시글 생성 요청 데이터", required = true)
             @ModelAttribute PostRequestDto request) {
 
@@ -137,7 +138,7 @@ public class PostController {
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
             @Parameter(description = "수정 요청자 회원 ID", required = true)
-            @RequestHeader("Member-Id") Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @Parameter(description = "게시글 수정 데이터 (multipart/form-data)", required = true)
             @ModelAttribute PostUpdateDto request) {
 
@@ -173,7 +174,7 @@ public class PostController {
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
-            @RequestHeader("Member-Id") Long memberId) {
+            @AuthenticationPrincipal Long memberId) {
 
         log.info("게시글 삭제 요청: postId={}, memberId={}", postId, memberId);
 

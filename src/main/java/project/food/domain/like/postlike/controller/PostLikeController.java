@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.like.postlike.dto.PostLikeCountDTO;
 import project.food.domain.like.postlike.dto.PostLikeResponseDto;
@@ -38,7 +39,7 @@ public class PostLikeController {
             @ApiResponse(responseCode = "409", description = "이미 좋아요를 누른 게시글")
     })
     @PostMapping("/{postId}/likes")
-    public ResponseEntity<PostLikeResponseDto> addLike(@RequestHeader("Member-Id") Long memberId,
+    public ResponseEntity<PostLikeResponseDto> addLike(@AuthenticationPrincipal Long memberId,
                                                        @PathVariable Long postId) {
         PostLikeResponseDto responseDto = postLikeService.addLike(memberId, postId);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
@@ -56,7 +57,7 @@ public class PostLikeController {
             @ApiResponse(responseCode = "404", description = "좋아요를 찾을 수 없음")
     })
     @DeleteMapping("/{postId}/likes")
-    public ResponseEntity<Void> removeLike(@RequestHeader("Member-Id") Long memberId,
+    public ResponseEntity<Void> removeLike(@AuthenticationPrincipal Long memberId,
                                            @PathVariable Long postId) {
         postLikeService.removeLike(memberId, postId);
         return ResponseEntity.noContent().build();
@@ -75,7 +76,7 @@ public class PostLikeController {
             @ApiResponse(responseCode = "404", description = "회원 또는 게시글을 찾을 수 없음")
     })
     @PutMapping("/{postId}/likes/toggle")
-    public ResponseEntity<Boolean> toggleLike(@RequestHeader("Member-Id") Long memberId,
+    public ResponseEntity<Boolean> toggleLike(@AuthenticationPrincipal Long memberId,
                                               @PathVariable Long postId) {
         boolean isLikes = postLikeService.toggleLike(memberId, postId);
         return ResponseEntity.ok(isLikes);
@@ -95,7 +96,7 @@ public class PostLikeController {
     })
     @GetMapping("/{postId}/likes/count")
     public ResponseEntity<PostLikeCountDTO> getLikeCount(
-            @RequestHeader(value = "Member-Id", required = false) Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long postId) {
         PostLikeCountDTO likeCountDTO = postLikeService.getLikeCount(memberId, postId);
         return ResponseEntity.ok(likeCountDTO);
