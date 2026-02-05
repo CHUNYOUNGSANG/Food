@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import project.food.domain.member.dto.LoginRequestDto;
-import project.food.domain.member.dto.MemberRequestDto;
-import project.food.domain.member.dto.MemberResponseDto;
-import project.food.domain.member.dto.MemberUpdateDto;
+import project.food.domain.member.dto.*;
 import project.food.domain.member.service.MemberService;
 import project.food.domain.post.dto.PostResponseDto;
 
@@ -50,14 +47,33 @@ public class MemberController {
     @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "로그인 성공",
-                    content = @Content(schema = @Schema(implementation = MemberResponseDto.class))),
+                    content = @Content(schema = @Schema(implementation = LoginResponseDto.class))),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터 (유효성 검사 실패)"),
             @ApiResponse(responseCode = "401", description = "인증 실패 (이메일 또는 비밀번호 불일치)"),
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @PostMapping("/login")
-    public ResponseEntity<MemberResponseDto> login(@Valid @RequestBody LoginRequestDto requestDto) {
-        MemberResponseDto responseDto = memberService.login(requestDto);
+    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto requestDto) {
+        LoginResponseDto responseDto = memberService.login(requestDto);
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 토큰 재발급
+     */
+    @Operation(summary = "토큰 재발급", description =
+            "리프레시 토큰으로 새로운 토큰을 발급합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description
+                    = "재발급 성공",
+                    content = @Content(schema =
+                    @Schema(implementation = LoginResponseDto.class))),
+            @ApiResponse(responseCode = "401", description
+                    = "유효하지 않은 리프레시 토큰")
+    })
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponseDto> refresh(@Valid @RequestBody TokenRefreshRequestDto requestDto) {
+        LoginResponseDto responseDto = memberService.refreshToken(requestDto);
         return ResponseEntity.ok(responseDto);
     }
 

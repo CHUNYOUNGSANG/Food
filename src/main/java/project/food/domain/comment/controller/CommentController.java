@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.comment.dto.CommentRequestDto;
 import project.food.domain.comment.dto.CommentResponseDto;
@@ -60,7 +61,7 @@ public class CommentController {
             @Parameter(description = "게시글 ID", required = true)
             @PathVariable Long postId,
             @Parameter(description = "작성자 회원 ID", required = true)
-            @RequestHeader("Member-Id") Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @Parameter(description = "댓글 내용", required = true)
             @Valid @RequestBody CommentRequestDto requestDto) {
 
@@ -154,7 +155,7 @@ public class CommentController {
             @Parameter(description = "댓글 ID", required = true)
             @PathVariable Long commentId,
             @Parameter(description = "수정 요청자 회원 ID", required = true)
-            @RequestHeader("Member-Id") Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @Parameter(description = "수정할 댓글 내용", required = true)
             @Valid @RequestBody CommentRequestDto requestDto) {
 
@@ -189,7 +190,7 @@ public class CommentController {
             @Parameter(description = "댓글 ID", required = true)
             @PathVariable Long commentId,
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
-            @RequestHeader("Member-Id") Long memberId) {
+            @AuthenticationPrincipal Long memberId) {
 
         log.info("댓글 삭제 요청: commentId={}, memberID={}, postId={}", commentId, memberId, postId);
 

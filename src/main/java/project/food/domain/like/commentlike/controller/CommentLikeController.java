@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.like.commentlike.dto.CommentLikeCountDto;
 import project.food.domain.like.commentlike.dto.CommentLikeResponseDto;
@@ -40,7 +41,7 @@ public class CommentLikeController {
     })
     @PostMapping("/{commentId}/likes")
     public ResponseEntity<CommentLikeResponseDto> addLike(
-            @RequestHeader("Member-Id") Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long commentId) {
         CommentLikeResponseDto responseDto = commentLikeService.addLike(memberId, commentId);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
@@ -58,8 +59,7 @@ public class CommentLikeController {
             @ApiResponse(responseCode = "404", description = "좋아요를 찾을 수 없음")
     })
     @DeleteMapping("/{commentId}/likes")
-    public ResponseEntity<Void> removeLike(
-            @RequestHeader("Member-Id") Long memberId,
+    public ResponseEntity<Void> removeLike(@AuthenticationPrincipal Long memberId,
             @PathVariable Long commentId) {
         commentLikeService.removeLike(memberId, commentId);
         return ResponseEntity.noContent().build();
@@ -78,8 +78,7 @@ public class CommentLikeController {
             @ApiResponse(responseCode = "404", description = "회원 또는 댓글을 찾을 수 없음")
     })
     @PutMapping("/{commentId}/likes/toggle")
-    public ResponseEntity<Boolean> likeToggle(
-            @RequestHeader("Member-Id") Long memberId,
+    public ResponseEntity<Boolean> likeToggle(@AuthenticationPrincipal Long memberId,
             @PathVariable Long commentId) {
         boolean isLiked = commentLikeService.likeToggle(memberId, commentId);
         return ResponseEntity.ok(isLiked);
@@ -99,7 +98,7 @@ public class CommentLikeController {
     })
     @GetMapping("/{commentId}/likes/count")
     public ResponseEntity<CommentLikeCountDto> getLikeCount(
-            @RequestHeader(value = "Member-Id", required = false) Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long commentId) {
         CommentLikeCountDto likeCountDto = commentLikeService.getLikeCount(memberId, commentId);
         return ResponseEntity.ok(likeCountDto);
