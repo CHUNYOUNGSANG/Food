@@ -166,7 +166,9 @@ public class MemberService {
         return MemberResponseDto.from(member);
     }
 
-    // 비밀번호 변경
+    /**
+     * 비밀번호 변경
+     */
     @Transactional
     public void updatePassword(Long id, String oldPassword, String newPassword) {
         log.info("비밀번호 변경: id = {}", id);
@@ -174,6 +176,12 @@ public class MemberService {
         // 회원 조회
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 기존 비밀번호 검증
+        if (!passwordEncoder.matches(oldPassword, member.getPassword())) {
+            log.warn("기존 비밀번호 불일치: id = {}", id);
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
 
         // 새 비밀번호 암호화 및 변경
         String encodedPassword = passwordEncoder.encode(newPassword);
