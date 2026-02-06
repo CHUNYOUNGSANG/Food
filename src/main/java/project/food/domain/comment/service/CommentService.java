@@ -8,6 +8,7 @@ import project.food.domain.comment.dto.CommentRequestDto;
 import project.food.domain.comment.dto.CommentResponseDto;
 import project.food.domain.comment.entity.Comment;
 import project.food.domain.comment.repository.CommentRepository;
+import project.food.domain.like.commentlike.repository.CommentLikeRepository;
 import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
 import project.food.domain.post.entity.Post;
@@ -32,6 +33,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     /**
      * 댓글 작성
@@ -187,7 +189,8 @@ public class CommentService {
      * 댓글 삭제
      * <p>
      * 로직:
-     * 1. 대댓글이 있는 경우 -> 삭제 (내용만 변경)
+     * 0. 댓글 좋아요 먼저 삭제 (외래키 제약조건)
+     * 1. 대댓글이 있는 경우 -> 논리 삭제 (내용만 변경)
      * 2. 대댓글이 없는 경우
      * - 일반 댓글 -> 완전 삭제
      * - 대댓글 -> 완전 삭제 후 부모 댓글 정리
@@ -226,7 +229,7 @@ public class CommentService {
                 .existsByParentCommentIdAndDeletedFalse(commentId);
 
         if (hasReplies) {
-            // 4-1. 대댓글이 있으면 논리 삭제
+            // 4-1. 대댓글이 있으면 논리 삭제 (좋아요는 유지)
             comment.softDelete();
             log.info("✅ 댓글 논리 삭제 완료 (대댓글 있음): commentId={}, memberId={}",
                     commentId, memberId);
@@ -234,6 +237,10 @@ public class CommentService {
             // 4-2. 대댓글이 없으면 완전 삭제
             Long parentCommentId = comment.getParentCommentId();
             boolean isReply = comment.isReply();
+
+            // ⭐ 댓글 좋아요 먼저 삭제 (외래키 제약조건)
+            commentLikeRepository.deleteByCommentId(commentId);
+            log.debug("댓글 좋아요 삭제 완료: commentId={}", commentId);
 
             commentRepository.delete(comment);
             log.info("✅ 댓글 완전 삭제 완료: commentId={}, memberId={}, isReply={}",
