@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import project.food.global.api.kakao.dto.KakaoAddressResponse;
+import project.food.global.api.kakao.dto.KakaoKeywordResponse;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 
@@ -29,6 +30,9 @@ public class KakaoMapService {
 
     private static final String KAKAO_ADDRESS_API_URL =
             "https://dapi.kakao.com/v2/local/search/address.json";
+
+    private static final String KAKAO_KEYWORD_API_URL =
+            "https://dapi.kakao.com/v2/local/search/keyword.json";
 
     private final RestTemplate restTemplate;
 
@@ -83,6 +87,63 @@ public class KakaoMapService {
         } catch (RestClientException e) {
             log.error("⚠️카카오 API 호출 중 오류: address={}, error={}",
                     address, e.getMessage());
+            throw new CustomException(ErrorCode.KAKAO_API_ERROR);
+        }
+    }
+
+    /**
+     * 키워드로 음식점 장소 검색
+     * @param keyword 검색 키워드 (예: "강남 스시")
+     * @param page 페이지 번호 (1부터)
+     * @return 장소 검색 결과
+     */
+    public KakaoKeywordResponse searchPlaceByKeyword(String keyword, int page) {
+        log.debug("카카오 키워드 검색 시작: keyword={}, page={}", keyword, page);
+
+        String uri = UriComponentsBuilder
+                .fromHttpUrl(KAKAO_KEYWORD_API_URL)
+                .queryParam("query", keyword)
+                .queryParam("category_group_code", "FD6")
+                .queryParam("page", page)
+                .queryParam("size", 10)
+                .build()
+                .toUriString();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "KakaoAK " + kakaoApiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<KakaoKeywordResponse> response =
+                    restTemplate.exchange(
+                            uri,
+                            HttpMethod.GET,
+                            entity,
+                            KakaoKeywordResponse.class
+                    );
+
+            KakaoKeywordResponse body = response.getBody();
+
+            if (body == null || !body.hasResult()) {
+                log.warn("카카오 키워드 검색 결과 없음: keyword={}", keyword);
+                throw new CustomException(ErrorCode.KAKAO_ADDRESS_NOT_FOUND);
+            }
+
+            log.info("✅ 카카오 키워드 검색 성공: keyword={}, resultCount={}",
+                    keyword, body.getDocuments().size());
+
+            return body;
+
+        } catch (CustomException e) {
+            throw e;
+        } catch (HttpClientErrorException e) {
+            handleHttpError(e, keyword);
+            throw new CustomException(ErrorCode.KAKAO_API_ERROR);
+        } catch (RestClientException e) {
+            log.error("⚠️카카오 API 호출 중 오류: keyword={}, error={}",
+                    keyword, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_ERROR);
         }
     }

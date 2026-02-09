@@ -102,6 +102,9 @@ public class PostResponseDto {
     @Schema(description = "경도")
     private Double longitude;
 
+    @Schema(description = "태그 목록")
+    private List<String> tags;
+
     /**
      * 작성 시간
      */
@@ -136,6 +139,9 @@ public class PostResponseDto {
                 .viewCount(post.getViewCount())
                 .images(post.getImages().stream()
                         .map(ImageInfo::from)
+                        .collect(Collectors.toList()))
+                .tags(post.getPostTags().stream()
+                        .map(postTag -> postTag.getTag().getName())
                         .collect(Collectors.toList()))
                 .latitude(post.getLatitude())
                 .longitude(post.getLongitude())

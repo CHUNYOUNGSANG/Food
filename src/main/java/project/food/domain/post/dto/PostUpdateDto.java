@@ -64,4 +64,8 @@ public class PostUpdateDto {
     @Schema(description = "삭제할 이미지 ID 목록", example = "[1, 2, 3]")
     @Builder.Default
     private List<Long> deleteImageIds = new ArrayList<>();
+
+    @Schema(description = "수정할 태그 이름 목록 (전체 교체)")
+    private List<String> tagNames;
+
 }

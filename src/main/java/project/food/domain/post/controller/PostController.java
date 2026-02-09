@@ -18,6 +18,8 @@ import project.food.domain.post.dto.PostRequestDto;
 import project.food.domain.post.dto.PostResponseDto;
 import project.food.domain.post.dto.PostUpdateDto;
 import project.food.domain.post.service.PostService;
+import project.food.global.api.kakao.dto.KakaoKeywordResponse;
+import project.food.global.api.kakao.service.KakaoMapService;
 
 import java.util.List;
 
@@ -34,6 +36,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final KakaoMapService kakaoMapService;
 
     /**
      * 게시글 생성
@@ -259,5 +262,35 @@ public class PostController {
                 keyword, posts.size());
 
         return ResponseEntity.ok(posts);
+    }
+
+    /**
+     * 음식점 장소 검색 (카카오 키워드 API)
+     * GET /api/posts/search/restaurant?keyword=강남스시&page=1
+     * @param keyword 검색 키워드
+     * @param page 페이지 번호
+     * @return 음식점 검색 결과 (200 OK)
+     */
+    @Operation(summary = "음식점 장소 검색", description = "카카오 키워드 API로 음식점을 검색합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "검색 성공",
+                    content = @Content(schema = @Schema(implementation = KakaoKeywordResponse.class))),
+            @ApiResponse(responseCode = "404", description = "검색 결과 없음")
+    })
+    @GetMapping("/search/restaurant")
+    public ResponseEntity<KakaoKeywordResponse> searchRestaurant(
+            @Parameter(description = "검색 키워드", required = true, example = "강남 스시")
+            @RequestParam String keyword,
+            @Parameter(description = "페이지 번호 (1부터)")
+            @RequestParam(defaultValue = "1") int page) {
+
+        log.info("음식점 검색 요청: keyword={}, page={}", keyword, page);
+
+        KakaoKeywordResponse result = kakaoMapService.searchPlaceByKeyword(keyword, page);
+
+        log.info("✅ 음식점 검색 완료: keyword={}, resultCount={}",
+                keyword, result.getDocuments().size());
+
+        return ResponseEntity.ok(result);
     }
 }

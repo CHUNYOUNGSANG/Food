@@ -14,6 +14,9 @@ import project.food.domain.post.entity.Post;
 import project.food.domain.post.entity.PostImage;
 import project.food.domain.post.repository.PostImageRepository;
 import project.food.domain.post.repository.PostRepository;
+import project.food.domain.tag.entity.PostTag;
+import project.food.domain.tag.entity.Tag;
+import project.food.domain.tag.repository.TagRepository;
 import project.food.global.api.kakao.dto.KakaoAddressResponse;
 import project.food.global.api.kakao.service.KakaoMapService;
 import project.food.global.exception.CustomException;
@@ -40,6 +43,7 @@ public class PostService {
     private final PostImageRepository postImageRepository;
     private final FileStorageService fileStorageService;
     private final KakaoMapService kakaoMapService;
+    private final TagRepository tagRepository;
 
     /**
      * 게시글 생성
@@ -100,8 +104,16 @@ public class PostService {
             savePostImages(savedPost, request.getImages());
         }
 
-        log.info("✅ 게시글 생성 완료: postId={}, memberId={}, title={}, imageCount={}",
-                savedPost.getId(), memberId, savedPost.getTitle(), savedPost.getImages().size());
+        // 태그 저장
+        if (request.getTagNames() != null && !request.getTagNames().isEmpty()) {
+            log.debug("태그 저장 시작: postId={}, tagCount={}",
+                    savedPost.getId(), request.getTagNames().size());
+            savePostTags(savedPost, request.getTagNames());
+        }
+
+        log.info("✅ 게시글 생성 완료: postId={}, memberId={}, title={}, imageCount={}, tagCount={}",
+                savedPost.getId(), memberId, savedPost.getTitle(),
+                savedPost.getImages().size(), savedPost.getPostTags().size());
 
         return PostResponseDto.from(savedPost);
     }
@@ -227,8 +239,18 @@ public class PostService {
             savePostImages(post, request.getNewImages());
         }
 
-        log.info("✅ 게시글 수정 완료: postId={}, memberId={}, currentImageCount={}",
-                postId, memberId, post.getImages().size());
+        // 태그 수정 (전체 교체)
+        if (request.getTagNames() != null) {
+            log.debug("태그 수정 시작: postId={}, newTagCount={}",
+                    postId, request.getTagNames().size());
+            post.clearPostTag();
+            if (!request.getTagNames().isEmpty()) {
+                savePostTags(post, request.getTagNames());
+            }
+        }
+
+        log.info("✅ 게시글 수정 완료: postId={}, memberId={}, currentImageCount={}, tagCount={}",
+                postId, memberId, post.getImages().size(), post.getPostTags().size());
 
         return PostResponseDto.from(post);
 
@@ -359,6 +381,30 @@ public class PostService {
         return posts.stream()
                 .map(PostResponseDto::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 게시글 태그 저장
+     * - 태그가 없으면 새로 생성, 있으면 기존 태그 사용
+     * @param post 게시글
+     * @param tagNames 태그 이름 목록
+     */
+    private void savePostTags(Post post, List<String> tagNames) {
+        for (String tagName : tagNames) {
+            Tag tag = tagRepository.findByName(tagName)
+                    .orElseGet(() -> tagRepository.save(
+                            Tag.builder().name(tagName).build()
+                    ));
+
+            PostTag postTag = PostTag.builder()
+                    .post(post)
+                    .tag(tag)
+                    .build();
+
+            post.addPostTag(postTag);
+        }
+
+        log.info("✅ 태그 저장 완료: postId={}, tagCount={}", post.getId(), tagNames.size());
     }
 
     /**

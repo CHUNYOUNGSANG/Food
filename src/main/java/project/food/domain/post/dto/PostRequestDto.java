@@ -65,4 +65,8 @@ public class PostRequestDto {
     @Builder.Default
     private List<MultipartFile> images = new ArrayList<>();
 
+    @Schema(description = "태그 이름 목록")
+    @Builder.Default
+    private List<String> tagNames = new ArrayList<>();
+
 }
