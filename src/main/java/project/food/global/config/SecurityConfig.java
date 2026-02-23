@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/api/posts/**",
                                 "/api/tags/**",
+                                "/api/restaurants/**",
                                 "/api/posts/{postId}/comments",
                                 "/api/comments/{commentId}/likes/count",
                                 "/api/members/{memberId}/comments"

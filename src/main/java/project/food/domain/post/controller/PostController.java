@@ -18,6 +18,8 @@ import project.food.domain.post.dto.PostRequestDto;
 import project.food.domain.post.dto.PostResponseDto;
 import project.food.domain.post.dto.PostUpdateDto;
 import project.food.domain.post.service.PostService;
+import project.food.global.api.kakao.local.dto.KakaoKeywordResponse;
+import project.food.global.api.kakao.local.service.KakaoLocalService;
 
 import java.util.List;
 
@@ -34,6 +36,7 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final KakaoLocalService kakaoLocalService;
 
     /**
      * 게시글 생성
@@ -56,11 +59,10 @@ public class PostController {
             @Parameter(description = "게시글 생성 요청 데이터", required = true)
             @ModelAttribute PostRequestDto request) {
 
-        log.info("게시글 생성 요청: memberId={}, title={}, restaurantName={}, category={}, rating={}, imageCount={}",
+        log.info("게시글 생성 요청: memberId={}, title={}, restaurantId={}, rating={}, imageCount={}",
                 memberId,
                 request.getTitle(),
-                request.getRestaurantName(),
-                request.getFoodCategory(),
+                request.getRestaurantId(),
                 request.getRating(),
                 request.getImages() != null ? request.getImages().size() : 0);
 
@@ -97,7 +99,7 @@ public class PostController {
      * @param postId 게시글 ID
      * @return 게시글 상세 정보 (200 OK)
      */
-    @Operation(summary = "게시글 상세 조회", description = "특정 게시글의 상제 정보를 조회합니다.")
+    @Operation(summary = "게시글 상세 조회", description = "특정 게시글의 상세 정보를 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = PostResponseDto.class))),
@@ -213,37 +215,12 @@ public class PostController {
     }
 
     /**
-     * 음식 카테고리별 게시글 조회
-     * GET /api/posts/category/{foodCategory}
-     * @param foodCategory 음식 카테고리
-     * @return 해당 카테고리의 게시글 목록 (200 OK)
-     */
-    @Operation(summary = "카테고리별 게시글 조회", description = "특정 음식 카테고리의 게시글을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "조회 성공",
-            content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
-    @GetMapping("/category/{foodCategory}")
-    public ResponseEntity<List<PostResponseDto>> getPostsByCategory(
-            @Parameter(description = "음식 카테고리 (예: 한식, 중식, 양식)", required = true)
-            @PathVariable String foodCategory) {
-
-        log.info("카테고리별 게시글 조회 요청: category={}", foodCategory);
-
-        List<PostResponseDto> posts = postService.getPostsByCategory(foodCategory);
-
-        log.info("✅ 카테고리별 게시글 조회 완료: category={}, postCount={}",
-                foodCategory, posts.size());
-
-        return ResponseEntity.ok(posts);
-    }
-
-
-    /**
      * 게시글 검색
      * GET /api/posts/search?keyword=맛집
      * @param keyword 검색 키워드
      * @return 검색 결과 게시글 목록 (200 OK)
      */
-    @Operation(summary = "게시글 검색", description = "제목 또는 내용에 키워드가 포함된 게시글을 검색합니다.")
+    @Operation(summary = "게시글 검색", description = "제목에 키워드가 포함된 게시글을 검색합니다.")
     @ApiResponse(responseCode = "200", description = "검색 성공",
             content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping("/search")
@@ -259,5 +236,35 @@ public class PostController {
                 keyword, posts.size());
 
         return ResponseEntity.ok(posts);
+    }
+
+    /**
+     * 음식점 장소 검색 (카카오 키워드 API)
+     * GET /api/posts/search/restaurant?keyword=강남스시&page=1
+     * @param keyword 검색 키워드
+     * @param page 페이지 번호
+     * @return 음식점 검색 결과 (200 OK)
+     */
+    @Operation(summary = "음식점 장소 검색", description = "카카오 키워드 API로 음식점을 검색합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "검색 성공",
+                    content = @Content(schema = @Schema(implementation = KakaoKeywordResponse.class))),
+            @ApiResponse(responseCode = "404", description = "검색 결과 없음")
+    })
+    @GetMapping("/search/restaurant")
+    public ResponseEntity<KakaoKeywordResponse> searchRestaurant(
+            @Parameter(description = "검색 키워드", required = true, example = "강남 스시")
+            @RequestParam String keyword,
+            @Parameter(description = "페이지 번호 (1부터)")
+            @RequestParam(defaultValue = "1") int page) {
+
+        log.info("음식점 검색 요청: keyword={}, page={}", keyword, page);
+
+        KakaoKeywordResponse result = kakaoLocalService.searchPlaceByKeyword(keyword, page);
+
+        log.info("✅ 음식점 검색 완료: keyword={}, resultCount={}",
+                keyword, result.getDocuments().size());
+
+        return ResponseEntity.ok(result);
     }
 }

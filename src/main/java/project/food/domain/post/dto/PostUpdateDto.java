@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,22 +31,33 @@ public class PostUpdateDto {
     private String content;
 
     /**
-     * 맛집 이름
+     * 변경할 음식점 ID (이미 DB에 있는 맛집)
      */
-    @Schema(description = "음식점 이름", example = "베이징식당")
-    private String restaurantName;
+    @Schema(description = "음식점 ID (DB에 있는 맛집)", example = "1")
+    private Long restaurantId;
 
-    /**
-     * 맛집 주소
-     */
-    @Schema(description = "음식점 주소", example = "서울시 강남구 청담동")
-    private String restaurantAddress;
+    // ── 카카오 맛집 정보 (새로 등록할 때) ──
 
-    /**
-     * 음식 카테고리
-     */
-    @Schema(description = "음식 카테고리", example = "중식")
-    private String foodCategory;
+    @Schema(description = "카카오 place ID", example = "12345678")
+    private String placeId;
+
+    @Schema(description = "맛집 이름", example = "서울식당")
+    private String placeName;
+
+    @Schema(description = "맛집 주소", example = "서울시 강남구 역삼동 123")
+    private String placeAddress;
+
+    @Schema(description = "카테고리", example = "음식점 > 한식")
+    private String placeCategory;
+
+    @Schema(description = "위도", example = "37.1234")
+    private Double placeLatitude;
+
+    @Schema(description = "경도", example = "127.1234")
+    private Double placeLongitude;
+
+    @Schema(description = "카카오맵 URL", example = "https://place.map.kakao.com/12345678")
+    private String placeUrl;
 
     /**
      * 평점 (0.0 ~ 5.0)
@@ -64,4 +74,8 @@ public class PostUpdateDto {
     @Schema(description = "삭제할 이미지 ID 목록", example = "[1, 2, 3]")
     @Builder.Default
     private List<Long> deleteImageIds = new ArrayList<>();
+
+    @Schema(description = "수정할 태그 이름 목록 (전체 교체)")
+    private List<String> tagNames;
+
 }

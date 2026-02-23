@@ -60,11 +60,15 @@ public enum ErrorCode {
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "J001", "만료된 토큰입니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "J002", "유효하지 않은 토큰입니다."),
 
+    /** 음식점 관련 에러 (R: Restaurant) */
+    RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "R001", "음식점을 찾을 수 없습니다."),
+
     /** 외부 API 관련 에러 (K: Kakao) */
     KAKAO_API_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "K001", "카카오 API 호출에 실패했습니다."),
     KAKAO_ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "K002", "해당 주소의 좌표를 찾을 수 없습니다."),
     KAKAO_API_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "K003", "카카오 API 인증에 실패했습니다."),
-    KAKAO_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "K004", "카카오 API 호출 한도를 초과했습니다");
+    KAKAO_API_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "K004", "카카오 API 호출 한도를 초과했습니다"),
+    KAKAO_PLACE_NOT_FOUND(HttpStatus.NOT_FOUND, "K005", "장소 검색 결과가 없습니다.");
 
     private final HttpStatus status;
     private final String code;
