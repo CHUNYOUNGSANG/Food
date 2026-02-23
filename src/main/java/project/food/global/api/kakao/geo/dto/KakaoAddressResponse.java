@@ -1,4 +1,4 @@
-package project.food.global.api.kakao.dto;
+package project.food.global.api.kakao.geo.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -16,6 +16,7 @@ public class KakaoAddressResponse {
     @Getter
     @NoArgsConstructor
     public static class Document {
+        @JsonProperty("address_name")
         private String addressName;     // 전체 주소
         private String x;               // 경도
         private String y;               // 위도

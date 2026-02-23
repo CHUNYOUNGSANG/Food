@@ -1,4 +1,4 @@
-package project.food.global.api.kakao.dto;
+package project.food.global.api.kakao.local.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
@@ -20,6 +20,9 @@ public class KakaoKeywordResponse {
     @Getter
     @NoArgsConstructor
     public static class Place {
+
+        private String id;
+
         @JsonProperty("place_name")
         private String placeName;
 

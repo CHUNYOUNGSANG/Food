@@ -1,5 +1,8 @@
 package project.food.domain.post.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import project.food.domain.post.entity.Post;
 
@@ -15,14 +18,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByMemberId(Long memberId);
 
     /**
-     * 음식 카테고리로 게시글 목록 조회
-     *
-     * @param foodCategory 음식 카테고리
-     * @return 게시글 목록
-     */
-    List<Post> findByFoodCategory(String foodCategory);
-
-    /**
      * keyword 검색 키워드
      * @param keyword 검색 키워드
      * @return 게시글 목록
@@ -30,12 +25,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByTitleContaining(String keyword);
 
     /**
-     * 최신술 정렬
+     * 최신순 정렬
      * @return 최신 게시글 목록
      */
     List<Post> findAllByOrderByCreatedAtDesc();
 
+    @EntityGraph(attributePaths = {"member"})
+    Page<Post> findByRestaurant_IdOrderByCreatedAtDesc(Long restaurantId, Pageable pageable);
 
-
+    Page<Post> findByRestaurantIsNull(Pageable pageable);
 
 }

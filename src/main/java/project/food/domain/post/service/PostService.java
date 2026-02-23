@@ -14,16 +14,17 @@ import project.food.domain.post.entity.Post;
 import project.food.domain.post.entity.PostImage;
 import project.food.domain.post.repository.PostImageRepository;
 import project.food.domain.post.repository.PostRepository;
+import project.food.domain.restaurant.entity.Restaurant;
+import project.food.domain.restaurant.repository.RestaurantRepository;
 import project.food.domain.tag.entity.PostTag;
 import project.food.domain.tag.entity.Tag;
 import project.food.domain.tag.repository.TagRepository;
-import project.food.global.api.kakao.dto.KakaoAddressResponse;
-import project.food.global.api.kakao.service.KakaoMapService;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
 import project.food.global.file.service.FileStorageService;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -42,7 +43,7 @@ public class PostService {
     private final MemberRepository memberRepository;
     private final PostImageRepository postImageRepository;
     private final FileStorageService fileStorageService;
-    private final KakaoMapService kakaoMapService;
+    private final RestaurantRepository restaurantRepository;
     private final TagRepository tagRepository;
 
     /**
@@ -62,35 +63,37 @@ public class PostService {
                     return new CustomException(ErrorCode.MEMBER_NOT_FOUND);
                 });
 
-        Double latitude = null;
-        Double longitude = null;
-
-        if (request.getRestaurantAddress() != null && !request.getRestaurantAddress().isBlank()) {
-            try {
-                KakaoAddressResponse response = kakaoMapService
-                        .getCoordinateByAddress(request.getRestaurantAddress());
-
-                latitude = response.getLatitude();
-                longitude = response.getLongitude();
-
-                log.debug("✅좌표 조회 성공: address={}, lat={}, lon={}",
-                        request.getRestaurantAddress(), latitude, longitude);
-
-            } catch (Exception e) {
-                log.warn("❌좌표 조회 실패 (게시글 생성은 계속): address={}, error={}",
-                        request.getRestaurantAddress(), e.getMessage());
-            }
+        // 음식점 조회 또는 카카오 맛집 자동 저장
+        Restaurant restaurant = null;
+        if (request.getRestaurantId() != null) {
+            // 기존 맛집 ID로 연결
+            restaurant = restaurantRepository.findById(request.getRestaurantId())
+                    .orElseThrow(() -> {
+                        log.error("❌ 음식점 찾기 실패: restaurantId={}", request.getRestaurantId());
+                        return new CustomException(ErrorCode.RESTAURANT_NOT_FOUND);
+                    });
+        } else if (request.getPlaceId() != null) {
+            // 카카오 placeId로 중복 체크 → 없으면 새로 저장
+            restaurant = restaurantRepository.findBySourceId(request.getPlaceId())
+                    .orElseGet(() -> restaurantRepository.save(
+                            Restaurant.builder()
+                                    .sourceId(request.getPlaceId())
+                                    .name(request.getPlaceName())
+                                    .address(request.getPlaceAddress())
+                                    .category(request.getPlaceCategory())
+                                    .latitude(request.getPlaceLatitude())
+                                    .longitude(request.getPlaceLongitude())
+                                    .placeUrl(request.getPlaceUrl())
+                                    .build()
+                    ));
+            log.debug("카카오 맛집 연결: placeId={}, restaurantId={}", request.getPlaceId(), restaurant.getId());
         }
 
         Post post = Post.builder()
                 .member(member)
                 .title(request.getTitle())
                 .content(request.getContent())
-                .restaurantName(request.getRestaurantName())
-                .restaurantAddress(request.getRestaurantAddress())
-                .latitude(latitude)
-                .longitude(longitude)
-                .foodCategory(request.getFoodCategory())
+                .restaurant(restaurant)
                 .rating(request.getRating())
                 .build();
 
@@ -188,42 +191,46 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
         }
 
-        Double newLatitude = post.getLatitude();
-        Double newLongitude = post.getLongitude();
-
-        boolean addressChanged = !Objects.equals(post.getRestaurantAddress(), request.getRestaurantAddress());
-
-        if (addressChanged && request.getRestaurantAddress() != null) {
-            try {
-                KakaoAddressResponse response = kakaoMapService
-                        .getCoordinateByAddress(request.getRestaurantAddress());
-
-                newLatitude = response.getLatitude();
-                newLongitude = response.getLongitude();
-
-                log.debug("✅좌표 재조회 성공: newAddress={}, lat={}, lon={}",
-                        request.getRestaurantAddress(), newLatitude, newLongitude);
-
-            } catch (Exception e) {
-                log.warn("❌좌표 재조회 실패: address={}, error={}",
-                        request.getRestaurantAddress(), e.getMessage());
-            }
-        }
-
-        String oldTitle = post.getTitle();
+        // 게시글 기본 정보 수정
         post.updatePost(
                 request.getTitle(),
                 request.getContent(),
-                request.getRestaurantName(),
-                request.getRestaurantAddress(),
-                request.getFoodCategory(),
-                request.getRating(),
-                newLatitude,
-                newLongitude
+                request.getRating()
         );
 
-        log.debug("게시글 정보 수정 완료: postId={}, titleChanged={}",
-                postId, !oldTitle.equals(request.getTitle()));
+        // 음식점 변경 (기존 ID 또는 카카오 맛집 새로 등록)
+        if (request.getRestaurantId() != null) {
+            // 기존 맛집 ID로 변경
+            Long currentRestaurantId = post.getRestaurant() != null ? post.getRestaurant().getId() : null;
+            if (!Objects.equals(currentRestaurantId, request.getRestaurantId())) {
+                Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
+                        .orElseThrow(() -> {
+                            log.error("❌ 음식점 찾기 실패: restaurantId={}", request.getRestaurantId());
+                            return new CustomException(ErrorCode.RESTAURANT_NOT_FOUND);
+                        });
+                post.assignRestaurant(restaurant);
+                log.debug("음식점 변경: postId={}, newRestaurantId={}", postId, request.getRestaurantId());
+            }
+        } else if (request.getPlaceId() != null) {
+            // 카카오 placeId로 중복 체크 → 없으면 새로 저장
+            Restaurant restaurant = restaurantRepository.findBySourceId(request.getPlaceId())
+                    .orElseGet(() -> restaurantRepository.save(
+                            Restaurant.builder()
+                                    .sourceId(request.getPlaceId())
+                                    .name(request.getPlaceName())
+                                    .address(request.getPlaceAddress())
+                                    .category(request.getPlaceCategory())
+                                    .latitude(request.getPlaceLatitude())
+                                    .longitude(request.getPlaceLongitude())
+                                    .placeUrl(request.getPlaceUrl())
+                                    .build()
+                    ));
+            post.assignRestaurant(restaurant);
+            log.debug("카카오 맛집 변경: postId={}, placeId={}, restaurantId={}",
+                    postId, request.getPlaceId(), restaurant.getId());
+        }
+
+        log.debug("게시글 정보 수정 완료: postId={}", postId);
 
         // 삭제할 이미지 처리
         if (request.getDeleteImageIds() != null && !request.getDeleteImageIds().isEmpty()) {
@@ -239,13 +246,25 @@ public class PostService {
             savePostImages(post, request.getNewImages());
         }
 
-        // 태그 수정 (전체 교체)
+        // 태그 수정 (tagNames가 null이면 태그 수정 안 함)
         if (request.getTagNames() != null) {
-            log.debug("태그 수정 시작: postId={}, newTagCount={}",
-                    postId, request.getTagNames().size());
-            post.clearPostTag();
-            if (!request.getTagNames().isEmpty()) {
-                savePostTags(post, request.getTagNames());
+            // 현재 태그 이름 목록
+            List<String> currentTagNames = post.getPostTags().stream()
+                    .map(pt -> pt.getTag().getName())
+                    .toList();
+
+            List<String> newTagNames = request.getTagNames().stream()
+                    .distinct().toList();
+
+            // 태그가 변경된 경우에만 처리 (같으면 스킵)
+            if (!new HashSet<>(currentTagNames).equals(new HashSet<>(newTagNames))) {
+                log.debug("태그 수정 시작: postId={}, before={}, after={}",
+                        postId, currentTagNames, newTagNames);
+                post.clearPostTag();
+                postRepository.flush(); // DELETE를 먼저 DB에 반영 (유니크 제약 충돌 방지)
+                if (!newTagNames.isEmpty()) {
+                    savePostTags(post, newTagNames);
+                }
             }
         }
 
@@ -315,56 +334,6 @@ public class PostService {
     }
 
     /**
-     * 음식 카테고리별 게시글 조회
-     * @param foodCategory 음식 카테고리
-     * @return 해당 카테고리의 게시글 목록
-     */
-    public List<PostResponseDto> getPostsByCategory(String foodCategory) {
-
-        log.debug("카테고리별 게시글 조회 시작: category={}", foodCategory);
-
-        List<Post> posts = postRepository.findByFoodCategory(foodCategory);
-
-        log.info("✅ 카테고리별 게시글 조회 완료: category={}, postCount={}",
-                foodCategory, posts.size());
-
-        return posts.stream()
-                .map(PostResponseDto::from)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 주소로 좌표 조회
-     * - 실패 시 null 반환 (예외 발생 X)
-     *
-     * @param address 주소
-     * @return 좌표 배열 [latitude, longitude] 또는 [null, null]
-     */
-    private Double[] getCoordinates(String address) {
-        if (address == null || address.isBlank()) {
-            return new Double[]{null, null};
-        }
-
-        try {
-            KakaoAddressResponse response = kakaoMapService
-                    .getCoordinateByAddress(address);
-
-            Double latitude = response.getLatitude();
-            Double longitude = response.getLongitude();
-
-            log.debug("✅좌표 조회 성공: address={}, lat={}, lng={}",
-                    address, latitude, longitude);
-
-            return new Double[]{latitude, longitude};
-
-        } catch (Exception e) {
-            log.warn("❌좌표 조회 실패: address={}, error={}",
-                    address, e.getMessage());
-            return new Double[]{null, null};
-        }
-    }
-
-    /**
      * 게시글 검색 (제목)
      * @param keyword 검색 키워드
      * @return 검색 결과 게시글 목록
@@ -390,7 +359,11 @@ public class PostService {
      * @param tagNames 태그 이름 목록
      */
     private void savePostTags(Post post, List<String> tagNames) {
-        for (String tagName : tagNames) {
+        List<String> distinctTagNames = tagNames.stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        for (String tagName : distinctTagNames) {
             Tag tag = tagRepository.findByName(tagName)
                     .orElseGet(() -> tagRepository.save(
                             Tag.builder().name(tagName).build()
@@ -404,7 +377,7 @@ public class PostService {
             post.addPostTag(postTag);
         }
 
-        log.info("✅ 태그 저장 완료: postId={}, tagCount={}", post.getId(), tagNames.size());
+        log.info("✅ 태그 저장 완료: postId={}, tagCount={}", post.getId(), distinctTagNames.size());
     }
 
     /**

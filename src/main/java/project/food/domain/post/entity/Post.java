@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import project.food.domain.comment.entity.Comment;
 import project.food.domain.member.entity.Member;
+import project.food.domain.restaurant.entity.Restaurant;
 import project.food.domain.tag.entity.PostTag;
 import project.food.domain.tag.entity.Tag;
 import project.food.global.common.BaseTimeEntity;
@@ -42,6 +43,10 @@ public class Post extends BaseTimeEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "restaurant_id")
+    private Restaurant restaurant;
+
     /**
      * 게시글 제목
      */
@@ -53,25 +58,6 @@ public class Post extends BaseTimeEntity {
      */
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
-
-    /**
-     * 맛집 이름
-     */
-    @Column(name = "restaurant_name", length = 100, nullable = false)
-    private String restaurantName;
-
-    /**
-     * 맛집 주소
-     */
-    @Column(name = "restaurant_address", length = 300)
-    private String restaurantAddress;
-
-    /**
-     * 음식 카테고리
-     * - 예: 한식, 중식, 일식, 양식 등
-     */
-    @Column(name = "food_category", length = 50)
-    private String foodCategory;
 
     /**
      * 평점
@@ -88,20 +74,6 @@ public class Post extends BaseTimeEntity {
     @Column(name = "view_count")
     @Builder.Default
     private Integer viewCount = 0;
-
-    /**
-     * 맛집 위도
-     * - 지도 표시용 좌표
-     */
-    @Column(name = "latitude")
-    private Double latitude;
-
-    /**
-     * 맛집 경도
-     * - 지도 표시용 좌표
-     */
-    @Column(name = "longitude")
-    private Double longitude;
 
     /**
      * 댓굴 목록 (1:N)
@@ -131,25 +103,17 @@ public class Post extends BaseTimeEntity {
      * 게시글 수정
      * @param title 수정할 제목
      * @param content 수정할 내용
-     * @param restaurantName 수정할 맛집 이름
-     * @param restaurantAddress 수정할 맛집 주소
-     * @param foodCategory 수정할 음식 카테고리
      * @param rating 수정할 평점
-     * @param latitude 수정할 위도
-     * @param longitude 수정할 경도
      */
 
-    public void updatePost(String title, String content, String restaurantName,
-                           String restaurantAddress, String foodCategory,
-                           Double rating, Double latitude, Double longitude) {
+    public void updatePost(String title, String content, Double rating) {
         this.title = title;
         this.content = content;
-        this.restaurantName = restaurantName;
-        this.restaurantAddress = restaurantAddress;
-        this.foodCategory = foodCategory;
         this.rating = rating;
-        this.latitude = latitude;
-        this.longitude = longitude;
+    }
+
+    public void assignRestaurant(Restaurant restaurant) {
+        this.restaurant = restaurant;
     }
 
     /**
@@ -266,24 +230,5 @@ public class Post extends BaseTimeEntity {
      */
     public void removeComment(Comment comment) {
         this.comments.remove(comment);
-    }
-
-    /**
-     * 좌표 정보 존재 여부 확인
-     * @return 좌표가 모두 있으면 true
-     */
-    public boolean hasCoordinates() {
-        return this.latitude != null && this.longitude != null;
-    }
-
-    /**
-     * 좌표 업데이트
-     * - 주소 변경 시 카카오 API 조회 후 호출
-     * @param latitude 위도
-     * @param longitude 경도
-     */
-    public void updateCoordinates(Double latitude, Double longitude) {
-        this.latitude = latitude;
-        this.longitude = longitude;
     }
 }

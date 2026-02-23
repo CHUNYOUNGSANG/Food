@@ -5,16 +5,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import project.food.domain.member.entity.Member;
 import project.food.domain.post.entity.Post;
+import project.food.domain.restaurant.entity.Restaurant;
 import project.food.global.config.JpaConfig;
 
-
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,7 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DataJpaTest
 @DisplayName("PostRepository 테스트")
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Import(JpaConfig.class)
 class PostRepositoryTest {
 
@@ -49,6 +50,7 @@ class PostRepositoryTest {
 
     private Member testMember1;
     private Member testMember2;
+    private Restaurant testRestaurant;
 
     /**
      * 각 테스트 실행 전에 공통으로 필요한 데이터 준비
@@ -61,13 +63,22 @@ class PostRepositoryTest {
         testMember1 = createMember("test1@example.com", "테스터1", "닉네임1");
         testMember2 = createMember("test2@example.com", "테스터2", "닉네임2");
 
+        // 테스트용 음식점 생성
+        testRestaurant = Restaurant.builder()
+                .sourceId("test-source-1")
+                .name("테스트 레스토랑")
+                .address("서울시 강남구")
+                .category("한식")
+                .latitude(37.1234)
+                .longitude(127.1234)
+                .build();
+
         // 영속성 컨텍스트에 저장 및 DB 반영
         entityManager.persist(testMember1);
         entityManager.persist(testMember2);
+        entityManager.persist(testRestaurant);
         entityManager.flush();
         entityManager.clear();      // 영속성 컨텍스트 초기화 (캐시 제거)
-
-
     }
 
     /**
@@ -90,11 +101,10 @@ class PostRepositoryTest {
             assertThat(savedPost.getId()).isNotNull();
             assertThat(savedPost.getTitle()).isEqualTo("테스트 게시글");
             assertThat(savedPost.getMember().getId()).isEqualTo(testMember1.getId());
-
         }
 
         @Test
-        @DisplayName("게시글 ID로 조회 - 존재하지 않는 ID")
+        @DisplayName("게시글 ID로 조회 - 성공")
         void findById_Success() {
             // Given: 게시글 저장
             Post post = createPost("조회 테스트", testMember1);
@@ -105,7 +115,7 @@ class PostRepositoryTest {
             // When: ID로 게시글 조회
             Optional<Post> foundPost = postRepository.findById(postId);
 
-            // Then: 게시글이 조화되어야 함
+            // Then: 게시글이 조회되어야 함
             assertThat(foundPost).isPresent();
             assertThat(foundPost.get().getId()).isEqualTo(postId);
             assertThat(foundPost.get().getTitle()).isEqualTo("조회 테스트");
@@ -113,7 +123,7 @@ class PostRepositoryTest {
 
         @Test
         @DisplayName("게시글 ID로 조회 - 존재하지 않는 ID")
-        void findBtId_NotFound() {
+        void findById_NotFound() {
             // Given: 존재하지 않는 ID
             Long invalidId = 99999L;
 
@@ -138,11 +148,7 @@ class PostRepositoryTest {
             foundPost.updatePost(
                     "수정된 제목",
                     "수정된 내용",
-                    "수정된 레스토랑",
-                    "수정된 주소",
-                    "중식",
-                    BigDecimal.valueOf(5.0),
-                    "https://example.com/new.jpg"
+                    5.0
             );
             entityManager.flush();
             entityManager.clear();
@@ -151,8 +157,7 @@ class PostRepositoryTest {
             Post updatedPost = postRepository.findById(savedPost.getId()).orElseThrow();
             assertThat(updatedPost.getTitle()).isEqualTo("수정된 제목");
             assertThat(updatedPost.getContent()).isEqualTo("수정된 내용");
-            assertThat(updatedPost.getRestaurantName()).isEqualTo("수정된 레스토랑");
-            assertThat(updatedPost.getFoodCategory()).isEqualTo("중식");
+            assertThat(updatedPost.getRating()).isEqualTo(5.0);
         }
 
         @Test
@@ -255,82 +260,53 @@ class PostRepositoryTest {
     }
 
     /**
-     * 3. 음식 카테고리별 조회 테스트
+     * 3. 음식점별 게시글 조회 테스트
      */
     @Nested
-    @DisplayName("음식 카테고리별 조회 테스트")
-    class FindByFoodCategoryTest {
+    @DisplayName("음식점별 게시글 조회 테스트")
+    class FindByRestaurantIdTest {
 
         @Test
-        @DisplayName("특정 카테고리의 게시글 조회 - 성공")
-        void findByFoodCategory_Success() {
-            // Given: 다양한 카테고리의 게시글 생성
-            entityManager.persist(createPostWithCategory("한식 맛집1", "한식", testMember1));
-            entityManager.persist(createPostWithCategory("한식 맛집2", "한식", testMember2));
-            entityManager.persist(createPostWithCategory("중식 맛집", "중식", testMember1));
-            entityManager.persist(createPostWithCategory("일식 맛집", "일식", testMember2));
+        @DisplayName("특정 음식점의 게시글 조회 - 성공")
+        void findByRestaurantId_Success() {
+            // Given: 같은 음식점에 대한 게시글 2개 생성
+            entityManager.persist(createPost("맛집 리뷰1", testMember1));
+            entityManager.persist(createPost("맛집 리뷰2", testMember2));
             entityManager.flush();
 
-            // When: "한식" 카테고리 게시글 조회
-            List<Post> koreanPosts = postRepository.findByFoodCategory("한식");
+            // When: 해당 음식점의 게시글 조회
+            org.springframework.data.domain.Pageable pageable =
+                    org.springframework.data.domain.PageRequest.of(0, 10);
+            var posts = postRepository.findByRestaurant_IdOrderByCreatedAtDesc(
+                    testRestaurant.getId(), pageable);
 
-            // Then: 한식 게시글 2개만 조회
-            assertThat(koreanPosts).hasSize(2);
-            assertThat(koreanPosts)
-                    .extracting(Post::getFoodCategory)
-                    .containsOnly("한식");
-            assertThat(koreanPosts)
-                    .extracting(Post::getTitle)
-                    .containsExactlyInAnyOrder("한식 맛집1", "한식 맛집2");
+            // Then: 2개 조회
+            assertThat(posts.getContent()).hasSize(2);
         }
 
         @Test
-        @DisplayName("특정 카테고리의 게시글 조회 - 결과 없음")
-        void findByFoodCategory_Empty() {
-            // Given: "한식" 카테고리만 있는 상태
-            entityManager.persist(createPostWithCategory("한식 맛집", "한식", testMember1));
+        @DisplayName("음식점이 없는 게시글 조회")
+        void findByRestaurantIsNull() {
+            // Given: 음식점 없는 게시글 생성
+            Post postWithoutRestaurant = Post.builder()
+                    .member(testMember1)
+                    .title("음식점 없는 게시글")
+                    .content("테스트 내용")
+                    .rating(4.0)
+                    .viewCount(0)
+                    .build();
+            entityManager.persist(postWithoutRestaurant);
+            entityManager.persist(createPost("음식점 있는 게시글", testMember1));
             entityManager.flush();
 
-            // When: "양식" 카테고리 조회
-            List<Post> westernPosts = postRepository.findByFoodCategory("양식");
+            // When: 음식점이 null인 게시글 조회
+            org.springframework.data.domain.Pageable pageable =
+                    org.springframework.data.domain.PageRequest.of(0, 10);
+            var posts = postRepository.findByRestaurantIsNull(pageable);
 
-            // Then: 빈 리스트 반환
-
-            assertThat(westernPosts).isEmpty();
-        }
-
-        @Test
-        @DisplayName("카테고리가 null인 게시글 조회")
-        void findByFoodCategory_Null() {
-            // Given: 카테고리가 null인 게시글
-            Post postWithoutCategory = createPost("카테고리 없음", testMember1);
-            // foodCategory는 null (기본값)
-            entityManager.persist(postWithoutCategory);
-            entityManager.flush();
-
-            // When: null로 조회
-            List<Post> postsWithNullCategory = postRepository.findByFoodCategory(null);
-
-            // Then: 카테고리 null인 게시글 조회
-            assertThat(postsWithNullCategory).hasSize(1);
-            assertThat(postsWithNullCategory.get(0).getFoodCategory()).isNull();
-
-        }
-
-        @Test
-        @DisplayName("대소문자 구분 확인, 공백")
-        void findByFoodCategory_CaseSensitive() {
-            // Given: "한식" 카테고리 게시글
-            entityManager.persist(createPostWithCategory("한식 맛집", "한식", testMember1));
-            entityManager.flush();
-
-            // When: 대소문자, 공백 다르게 조회 (실제로는 한글이라 큰 의미 없지만 테스트 목적)
-            List<Post> exactMatch = postRepository.findByFoodCategory("한식");
-            List<Post> differentCase = postRepository.findByFoodCategory("한식 ");
-
-            // Then: 정확히 일치하는 경우만 조회
-            assertThat(exactMatch).hasSize(1);
-            assertThat(differentCase).hasSize(1);
+            // Then: 1개만 조회
+            assertThat(posts.getContent()).hasSize(1);
+            assertThat(posts.getContent().get(0).getTitle()).isEqualTo("음식점 없는 게시글");
         }
     }
 
@@ -377,22 +353,22 @@ class PostRepositoryTest {
         }
 
         @Test
-        @DisplayName("제목 키워드 검색 - 대소문자 구분 없음")
-        void findByTitleContaining_CaseInsensitive() {
+        @DisplayName("제목 키워드 검색 - 정확한 키워드 매칭")
+        void findByTitleContaining_ExactKeyword() {
             // Given: 영어 제목 게시글
             entityManager.persist(createPost("Best Restaurant in Seoul", testMember1));
             entityManager.persist(createPost("restaurant guide", testMember2));
+            entityManager.persist(createPost("cafe review", testMember1));
             entityManager.flush();
 
-            // When: 소문자로 검색
-            List<Post> lowerCaseSearch = postRepository.findByTitleContaining("restaurant");
+            // When: "Restaurant" 키워드로 검색
+            List<Post> searchResults = postRepository.findByTitleContaining("Restaurant");
 
-            // When: 대문자로 검색
-            List<Post> upperCaseSearch = postRepository.findByTitleContaining("Restaurant");
-
-            // Then: 대소문자 구분 없이 조회 (MySQL은 기본적으로 대소문자 구분 없음)
-            assertThat(lowerCaseSearch).hasSize(2);
-            assertThat(upperCaseSearch).hasSize(2);
+            // Then: "Restaurant"이 포함된 게시글 조회
+            assertThat(searchResults).isNotEmpty();
+            assertThat(searchResults)
+                    .extracting(Post::getTitle)
+                    .allMatch(title -> title.contains("Restaurant"));
         }
 
         @Test
@@ -434,8 +410,8 @@ class PostRepositoryTest {
 
             Thread.sleep(100);
 
-            Post newstPost = createPost("가장 최신 게시글", testMember2);
-            entityManager.persist(newstPost);
+            Post newestPost = createPost("가장 최신 게시글", testMember2);
+            entityManager.persist(newestPost);
             entityManager.flush();
 
             // When: 최신순으로 조회
@@ -446,7 +422,6 @@ class PostRepositoryTest {
             assertThat(posts.get(0).getTitle()).isEqualTo("가장 최신 게시글");
             assertThat(posts.get(1).getTitle()).isEqualTo("최신 게시글");
             assertThat(posts.get(2).getTitle()).isEqualTo("오래된 게시글");
-
         }
 
         @Test
@@ -480,59 +455,86 @@ class PostRepositoryTest {
             // Then: 3개 모두 조회 (순서는 DB가 결정)
             assertThat(posts).hasSize(3);
         }
+    }
 
-        /**
-         * 6. 복잡 조건 테스트
-         */
-        @Nested
-        @DisplayName("복합 조건 테스트")
-        class ComPlexQueryTest {
+    /**
+     * 6. 복합 조건 테스트
+     */
+    @Nested
+    @DisplayName("복합 조건 테스트")
+    class ComplexQueryTest {
 
-            @Test
-            @DisplayName("특정 회원의 특정 카테고리 게시글 조회")
-            void findByMemberIdAndCategory() {
-                // Given: 다양한 조합의 게시글 생성
-                entityManager.persist(createPostWithCategory("회원1-한식", "한식", testMember1));
-                entityManager.persist(createPostWithCategory("회원1-중식", "중식", testMember1));
-                entityManager.persist(createPostWithCategory("회원2-한식", "중식", testMember2));
-                entityManager.flush();
+        @Test
+        @DisplayName("키워드 검색 후 최신순 정렬")
+        void searchAndSort() throws InterruptedException {
+            // Given: "맛집" 키워드가 포함된 게시글 시간차 생성
+            Post oldPost = createPost("강남 맛집", testMember1);
+            entityManager.persist(oldPost);
+            entityManager.flush();
 
-                // When: 회원1의 게시글 중 한식만 필터링
-                List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId());
-                List<Post> member1KoreanPosts = member1Posts.stream()
-                        .filter(post -> "한식".equals(post.getFoodCategory()))
-                        .toList();
+            Thread.sleep(100);
 
-                // Then: 회원1의 한식 게시글 1개만 조회
-                assertThat(member1KoreanPosts).hasSize(1);
-                assertThat(member1KoreanPosts.get(0).getTitle()).isEqualTo("회원1-한식");
-            }
+            Post newPost = createPost("홍대 맛집", testMember2);
+            entityManager.persist(newPost);
+            entityManager.flush();
 
-            @Test
-            @DisplayName("키워드 검색 후 최신순 정렬")
-            void searchAndSort() throws InterruptedException {
-                // Given: "맛집" 키워드가 포함된 게시글 시간차 생성
-                Post oldPost = createPost("강남 맛집", testMember1);
-                entityManager.persist(oldPost);
-                entityManager.flush();
+            // When: "맛집" 검색 후 최신순 정렬
+            List<Post> searchResults = postRepository.findByTitleContaining("맛집");
+            List<Post> sortedResults = searchResults.stream()
+                    .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
+                    .toList();
 
-                Thread.sleep(100);
+            // Then: 최신 게시글이 먼저
+            assertThat(sortedResults).hasSize(2);
+            assertThat(sortedResults.get(0).getTitle()).isEqualTo("홍대 맛집");
+            assertThat(sortedResults.get(1).getTitle()).isEqualTo("강남 맛집");
+        }
 
-                Post newPost = createPost("홍대 맛집", testMember2);
-                entityManager.persist(newPost);
-                entityManager.flush();
+        @Test
+        @DisplayName("특정 회원의 특정 음식점 게시글 조회")
+        void findByMemberAndRestaurant() {
+            // Given: 다른 음식점 생성
+            Restaurant anotherRestaurant = Restaurant.builder()
+                    .sourceId("test-source-2")
+                    .name("다른 레스토랑")
+                    .address("서울시 홍대")
+                    .category("중식")
+                    .latitude(37.5678)
+                    .longitude(127.5678)
+                    .build();
+            entityManager.persist(anotherRestaurant);
+            entityManager.flush();
 
-                // When: "맛집" 검색 후 최신순 정렬
-                List<Post> searchResults = postRepository.findByTitleContaining("맛집");
-                List<Post> sortedResults = searchResults.stream()
-                        .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
-                        .toList();
+            // 회원1 - testRestaurant 게시글
+            Post post1 = createPost("회원1-레스토랑1", testMember1);
+            entityManager.persist(post1);
 
-                // Then: 최신 게시글이 먼저
-                assertThat(sortedResults).hasSize(2);
-                assertThat(sortedResults.get(0).getTitle()).isEqualTo("홍대 맛집");
-                assertThat(sortedResults.get(1).getTitle()).isEqualTo("강남 맛집");
-            }
+            // 회원1 - anotherRestaurant 게시글
+            Post post2 = Post.builder()
+                    .member(testMember1)
+                    .title("회원1-레스토랑2")
+                    .content("테스트 내용")
+                    .restaurant(anotherRestaurant)
+                    .rating(4.0)
+                    .viewCount(0)
+                    .build();
+            entityManager.persist(post2);
+
+            // 회원2 - testRestaurant 게시글
+            Post post3 = createPost("회원2-레스토랑1", testMember2);
+            entityManager.persist(post3);
+            entityManager.flush();
+
+            // When: 회원1의 게시글 중 testRestaurant 것만 필터링
+            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId());
+            List<Post> member1Restaurant1Posts = member1Posts.stream()
+                    .filter(post -> testRestaurant.getId().equals(
+                            post.getRestaurant() != null ? post.getRestaurant().getId() : null))
+                    .toList();
+
+            // Then: 회원1의 testRestaurant 게시글 1개만 조회
+            assertThat(member1Restaurant1Posts).hasSize(1);
+            assertThat(member1Restaurant1Posts.get(0).getTitle()).isEqualTo("회원1-레스토랑1");
         }
     }
 
@@ -556,27 +558,9 @@ class PostRepositoryTest {
                 .member(member)
                 .title(title)
                 .content("테스트 내용")
-                .restaurantName("테스트 레스토랑")
-                .restaurantAddress("서울시 강남구")
-                .rating(BigDecimal.valueOf(4.5))
+                .restaurant(testRestaurant)
+                .rating(4.5)
                 .viewCount(0)
                 .build();
-    }
-
-    /**
-     * 테스트용 게시글 생성 헬퍼 메서드 (카테고리 포함)
-     */
-    private Post createPostWithCategory(String title, String category, Member member) {
-        return Post.builder()
-                .member(member)
-                .title(title)
-                .content("테스트 내용")
-                .restaurantName("테스트 레스토랑")
-                .restaurantAddress("서울시 강남구")
-                .foodCategory(category)
-                .rating(BigDecimal.valueOf(4.5))
-                .viewCount(0)
-                .build();
-
     }
 }
