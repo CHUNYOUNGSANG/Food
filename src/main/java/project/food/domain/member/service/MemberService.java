@@ -14,6 +14,8 @@ import project.food.global.file.dto.UploadedFileInfo;
 import project.food.global.file.service.FileStorageService;
 import project.food.global.jwt.JwtTokenProvider;
 
+import java.util.List;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -45,7 +47,6 @@ public class MemberService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
-        // ✅ 여기 추가
         String profileImageUrl = null;
         if (requestDto.getProfileImage() != null && !requestDto.getProfileImage().isEmpty()) {
             UploadedFileInfo fileInfo = fileStorage.saveProfileImage(requestDto.getProfileImage());
@@ -146,8 +147,16 @@ public class MemberService {
     }
 
     /**
+     * 전체 회원 조회
+     */
+    public List<MemberResponseDto> getAllMembers() {
+        return memberRepository.findAll().stream()
+                .map(MemberResponseDto::from)
+                .toList();
+    }
+
+    /**
      * 회원 정보 수정
-     * @return
      */
     @Transactional
     public MemberResponseDto updateMember(Long id, MemberUpdateDto updateDto) {

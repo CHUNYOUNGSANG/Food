@@ -76,4 +76,9 @@ public class Member extends BaseTimeEntity {
         return this.role == Role.ADMIN;
     }
 
+    // 관리자 권한 설정 메서드
+    public void promoteToAdmin() {
+        this.role = Role.ADMIN;
+    }
+
 }

@@ -16,6 +16,8 @@ import project.food.domain.member.dto.*;
 import project.food.domain.member.service.MemberService;
 import project.food.domain.post.dto.PostResponseDto;
 
+import java.util.List;
+
 @Tag(name = "Member", description = "회원 관리 API")
 @RestController
 @RequestMapping("/api/members")
@@ -76,6 +78,22 @@ public class MemberController {
     public ResponseEntity<LoginResponseDto> refresh(@Valid @RequestBody TokenRefreshRequestDto requestDto) {
         LoginResponseDto responseDto = memberService.refreshToken(requestDto);
         return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 전체 회원 목록 조회 (관리자 전용)
+     * GET /api/members
+     */
+    @Operation(summary = "전체 회원 목록 조회", description = "관리자 전용 - 전체 회원 목록을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = MemberResponseDto.class))),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음 (관리자만 접근 가능)")
+    })
+    @GetMapping
+    public ResponseEntity<List<MemberResponseDto>> getAllMembers() {
+        List<MemberResponseDto> members = memberService.getAllMembers();
+        return ResponseEntity.ok(members);
     }
 
     /**
