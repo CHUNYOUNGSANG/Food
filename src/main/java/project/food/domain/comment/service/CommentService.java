@@ -218,7 +218,10 @@ public class CommentService {
         }
 
         // 3. 작성자 본인 확인
-        if (!comment.isWriter(memberId)) {
+        Member requester = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (!comment.isWriter(memberId) && !requester.isAdmin()) {
             log.warn("⚠️ 댓글 삭제 권한 없음: commentId={}, requestMemberId={}, writerMemberId={}",
                     commentId, memberId, comment.getMember().getId());
             throw new CustomException(ErrorCode.COMMENT_AUTHOR_MISMATCH);

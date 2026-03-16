@@ -5,9 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.food.domain.comment.entity.Comment;
+import project.food.domain.comment.repository.CommentRepository;
+import project.food.domain.like.commentlike.repository.CommentLikeRepository;
+import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.domain.member.dto.*;
 import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
+import project.food.domain.post.entity.Post;
+import project.food.domain.post.repository.PostRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
@@ -23,6 +29,10 @@ import java.util.List;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final PostRepository postRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final CommentRepository commentRepository;
+    private final CommentLikeRepository commentLikeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final FileStorageService fileStorage;
@@ -221,13 +231,43 @@ public class MemberService {
      * 회원 탈퇴
      */
     @Transactional
-    public void deleteMember(Long id) {
+    public void deleteMember(Long id, Long requesterId) {
         log.info("회원 탈퇴: id = {}", id);
 
         // 회원 조회
         if (!memberRepository.existsById(id)) {
             throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
         }
+
+        Member requester = memberRepository.findById(requesterId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (!id.equals(requesterId) && !requester.isAdmin()) {
+            log.warn("회원 삭제 권한 없음: targetId = {}, requesterId = {}", id, requesterId);
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        // 회원이 누른 게시글/댓글 좋아요 삭제
+        postLikeRepository.deleteByMemberId(id);
+        commentLikeRepository.deleteByMemberId(id);
+
+        // 회원의 댓글에 다른 사람이 누른 좋아요 삭제
+        commentLikeRepository.deleteByCommentMemberId(id);
+
+        // 회원 게시글의 댓글에 달린 좋아요 + 게시글 좋아요 삭제
+        List<Post> posts = postRepository.findByMemberId(id);
+        for  (Post post : posts) {
+            for (Comment comment : post.getComments()) {
+                commentLikeRepository.deleteByCommentId(comment.getId());
+            }
+            postLikeRepository.deleteByPostId(post.getId());
+        }
+
+        // 회원 게시글 삭제 (cascade: post_image, post_tag, comments 자동 삭제)
+        postRepository.deleteAll(posts);
+
+        // 다른 게시글에 작성한 회원의 댓글 삭제
+        commentRepository.deleteById(id);
 
         // 회원 삭제
         memberRepository.deleteById(id);

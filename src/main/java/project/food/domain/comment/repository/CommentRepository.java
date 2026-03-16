@@ -1,6 +1,9 @@
 package project.food.domain.comment.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import project.food.domain.comment.entity.Comment;
 
 import java.util.List;
@@ -42,5 +45,13 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @return 존재 여부
      */
     boolean existsByParentCommentIdAndDeletedFalse(Long parentCommentId);
+
+    /**
+     * 특정 회원이 작성한 모든 댓글 삭제 (회원 탈퇴 시 사용)
+     * @param memberId
+     */
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.member.id = :memberId")
+    void deleteByMemberId(@Param("memberId") Long memberId);
 
 }

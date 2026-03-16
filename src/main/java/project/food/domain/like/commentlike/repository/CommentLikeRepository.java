@@ -1,6 +1,7 @@
 package project.food.domain.like.commentlike.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -72,4 +73,12 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> 
      * @param commentId
      */
     void deleteByCommentId(Long commentId);
+
+    /**
+     * 특정 회원이 작성한 댓글에 달린 모든 좋아요 삭제 (회원 탈퇴 시 사용)
+     * @param memberId
+     */
+    @Modifying
+    @Query("DELETE FROM CommentLike cl WHERE cl.comment.member.id = :memberId")
+    void deleteByCommentMemberId(@Param("memberId") Long memberId);
 }
