@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 "/api/comments/{commentId}/likes/count",
                                 "/api/members/{memberId}/comments"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/members").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);

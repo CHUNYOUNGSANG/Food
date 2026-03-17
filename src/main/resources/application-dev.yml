@@ -23,3 +23,7 @@ logging:
     project.food: DEBUG
     org.springframework.web: DEBUG
     org.hibernate: INFO
+
+admin:
+  email: admin@food.com
+  password: admin1234

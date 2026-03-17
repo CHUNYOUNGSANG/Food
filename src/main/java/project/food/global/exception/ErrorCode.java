@@ -18,6 +18,7 @@ public enum ErrorCode {
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "G002", "입력값이 올바르지 않습니다"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "G003", "지원하지 않는 HTTP 메서드입니다"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "G004", "인증이 필요합니다"),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "G005", "접근 권한이 없습니다."),
 
     /** 회원 관련 에러 (M: Member) */
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "회원을 찾을 수 없습니다."),

@@ -3,6 +3,7 @@ package project.food.global.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -79,6 +80,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
                 .body(response);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    protected  ResponseEntity<ErrorResponse> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        return ResponseEntity
+                .status(ErrorCode.METHOD_NOT_ALLOWED.getStatus())
+                .body(ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
 }
