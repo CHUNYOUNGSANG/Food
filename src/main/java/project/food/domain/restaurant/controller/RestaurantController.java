@@ -5,8 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.restaurant.dto.RestaurantDetailResponse;
 import project.food.domain.restaurant.dto.RestaurantListItemResponse;
+import project.food.domain.restaurant.dto.RestaurantRankResponse;
 import project.food.domain.restaurant.dto.RestaurantReviewItemResponse;
 import project.food.domain.restaurant.service.RestaurantService;
+import project.food.global.common.CursorPageResponse;
 
 /**
  * 맛집 조회 API 컨트롤러
@@ -61,5 +63,33 @@ public class RestaurantController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return restaurantService.getRestaurantPosts(restaurantId, page, size);
+    }
+
+    /**
+     * 추천맛집 목록 (무한 스크롤, 평균 평점 높은 순)
+     *
+     * 첫 요청: GET /api/restaurants/recommended?size=10
+     * 이후:    GET /api/restaurants/recommended?cursor=XXX&size=10
+     */
+    @GetMapping("/recommended")
+    public CursorPageResponse<RestaurantRankResponse> recommended(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return restaurantService.getRecommended(cursor, size);
+    }
+
+    /**
+     * 인기맛집 목록 (무한 스크롤, 리뷰 수 많은 순)
+     *
+     * 첫 요청: GET /api/restaurants/popular?size=10
+     * 이후:    GET /api/restaurants/popular?cursor=XXX&size=10
+     */
+    @GetMapping("/popular")
+    public CursorPageResponse<RestaurantRankResponse> popular(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return restaurantService.getPopular(cursor, size);
     }
 }
