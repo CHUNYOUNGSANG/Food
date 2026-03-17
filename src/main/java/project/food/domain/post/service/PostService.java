@@ -291,7 +291,10 @@ public class PostService {
                     return new CustomException(ErrorCode.POST_NOT_FOUND);
                 });
 
-        if (!post.isWriter(memberId)) {
+        Member requester = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        if (!post.isWriter(memberId) && !requester.isAdmin()) {
             log.warn("⚠️ 게시글 삭제 권한 없음: postId={}, requestMemberId={}, writerMemberId={}",
                     postId, memberId, post.getMember().getId());
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);

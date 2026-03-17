@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import project.food.domain.member.dto.*;
 import project.food.domain.member.service.MemberService;
@@ -162,8 +163,8 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
-        memberService.deleteMember(id);
+    public ResponseEntity<Void> deleteMember(@PathVariable Long id, @AuthenticationPrincipal Long requesterId) {
+        memberService.deleteMember(id, requesterId);
         return ResponseEntity.noContent().build();
     }
 
