@@ -8,11 +8,17 @@ import org.springframework.transaction.annotation.Transactional;
 import project.food.domain.post.repository.PostRepository;
 import project.food.domain.restaurant.dto.RestaurantDetailResponse;
 import project.food.domain.restaurant.dto.RestaurantListItemResponse;
+import project.food.domain.restaurant.dto.RestaurantRankResponse;
 import project.food.domain.restaurant.dto.RestaurantReviewItemResponse;
 import project.food.domain.restaurant.entity.Restaurant;
 import project.food.domain.restaurant.repository.RestaurantRepository;
+import project.food.global.common.CursorPageResponse;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
 
 /**
  * 맛집 조회 서비스
@@ -90,5 +96,105 @@ public class RestaurantService {
         return postRepository
                 .findByRestaurant_IdOrderByCreatedAtDesc(restaurantId, pageable)
                 .map(RestaurantReviewItemResponse::from);
+    }
+
+    /**
+     * 추천맛집 목록 (평균 평점 높은 순, cursor 기반 무한 스크롤)
+     *
+     * @param cursor Base64 인코딩된 "avgRating,id" (첫 페이지는 null)
+     * @param size   한 페이지 크기
+     * @return cursor 페이지 응답
+     */
+    public CursorPageResponse<RestaurantRankResponse> getRecommended(String cursor, int size) {
+        List<Object[]> rows;
+
+        if (cursor == null || cursor.isBlank()) {
+            rows = restaurantRepository.findRecommended(size + 1);
+        } else {
+            String[] parts = decodeCursor(cursor);
+            Double lastRating = Double.parseDouble(parts[0]);
+            Long lastId = Long.parseLong(parts[1]);
+            rows = restaurantRepository.findRecommendedAfterCursor(lastRating, lastId, size + 1);
+        }
+
+        boolean hasNext = rows.size() > size;
+        List<Object[]> pageRows = hasNext ? rows.subList(0, size) : rows;
+
+        List<RestaurantRankResponse> content = pageRows.stream()
+                .map(row -> RestaurantRankResponse.builder()
+                        .id(((Number) row[0]).longValue())
+                        .name((String) row[1])
+                        .address((String) row[2])
+                        .category((String) row[3])
+                        .avgRating(((Number) row[4]).doubleValue())
+                        .build())
+                .toList();
+
+        String nextCursor = null;
+        if (hasNext) {
+            RestaurantRankResponse last = content.get(content.size() - 1);
+            nextCursor = encodeCursor(last.getAvgRating().toString(), last.getId());
+        }
+
+        return CursorPageResponse.<RestaurantRankResponse>builder()
+                .content(content)
+                .nextCursor(nextCursor)
+                .hasNext(hasNext)
+                .build();
+    }
+
+    /**
+     * 인기맛집 목록 (리뷰 수 많은 순, cursor 기반 무한 스크롤)
+     *
+     * @param cursor Base64 인코딩된 "postCount,id" (첫 페이지는 null)
+     * @param size   한 페이지 크기
+     * @return cursor 페이지 응답
+     */
+    public CursorPageResponse<RestaurantRankResponse> getPopular(String cursor, int size) {
+        List<Object[]> rows;
+
+        if (cursor == null || cursor.isBlank()) {
+            rows = restaurantRepository.findPopular(size + 1);
+        } else {
+            String[] parts = decodeCursor(cursor);
+            Long lastCount = Long.parseLong(parts[0]);
+            Long lastId = Long.parseLong(parts[1]);
+            rows = restaurantRepository.findPopularAfterCursor(lastCount, lastId, size + 1);
+        }
+
+        boolean hasNext = rows.size() > size;
+        List<Object[]> pageRows = hasNext ? rows.subList(0, size) : rows;
+
+        List<RestaurantRankResponse> content = pageRows.stream()
+                .map(row -> RestaurantRankResponse.builder()
+                        .id(((Number) row[0]).longValue())
+                        .name((String) row[1])
+                        .address((String) row[2])
+                        .category((String) row[3])
+                        .postCount(((Number) row[4]).longValue())
+                        .build())
+                .toList();
+
+        String nextCursor = null;
+        if (hasNext) {
+            RestaurantRankResponse last = content.get(content.size() - 1);
+            nextCursor = encodeCursor(last.getPostCount().toString(), last.getId());
+        }
+
+        return CursorPageResponse.<RestaurantRankResponse>builder()
+                .content(content)
+                .nextCursor(nextCursor)
+                .hasNext(hasNext)
+                .build();
+    }
+
+    private String encodeCursor(String sortValue, Long id) {
+        String raw = sortValue + "," + id;
+        return Base64.getEncoder().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String[] decodeCursor(String cursor) {
+        byte[] decoded = Base64.getDecoder().decode(cursor);
+        return new String(decoded, StandardCharsets.UTF_8).split(",", 2);
     }
 }
