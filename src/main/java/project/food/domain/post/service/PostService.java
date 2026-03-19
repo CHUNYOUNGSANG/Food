@@ -300,21 +300,21 @@ public class PostService {
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
         }
 
-        List<String> storedFileNames = post.getImages().stream()
-                .map(PostImage::getStoredFileName)
+        List<String> filePaths = post.getImages().stream()
+                .map(PostImage::getFilePath)
                 .collect(Collectors.toList());
 
-        if (!storedFileNames.isEmpty()) {
+        if (!filePaths.isEmpty()) {
             log.debug("게시글 이미지 파일 삭제 시작: postId={}, imageCount={}",
-                    postId, storedFileNames.size());
-            fileStorageService.deleteFiles(storedFileNames);
+                    postId, filePaths.size());
+            fileStorageService.deleteFiles(filePaths);
             log.debug("게시글 이미지 파일 삭제 완료: postId={}", postId);
         }
 
         postRepository.delete(post);
 
         log.info("✅ 게시글 삭제 완료: postId={}, memberId={}, deletedImages={}",
-                postId, memberId, storedFileNames.size());
+                postId, memberId, filePaths.size());
     }
 
     /**
@@ -408,7 +408,7 @@ public class PostService {
                     .post(post)
                     .originalFileName(fileInfo.getOriginalFileName())
                     .storedFileName(fileInfo.getStoredFileName())
-                    .filePath(fileInfo.getFilePath())
+                    .filePath(fileInfo.getFileUrl())
                     .fileSize(fileInfo.getFileSize())
                     .displayOrder(displayOrder++)
                     .build();
@@ -450,11 +450,11 @@ public class PostService {
                 throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
             }
 
-            String storedFileName = postImage.getStoredFileName();
+            String filePath = postImage.getFilePath();
 
             // 파일 삭제
-            fileStorageService.deleteFile(storedFileName);
-            log.debug("파일 삭제 완료: storedFileName={}", storedFileName);
+            fileStorageService.deleteFile(filePath);
+            log.debug("파일 삭제 완료: filePath={}", filePath);
 
             // 엔티티 삭제
             post.removeImage(postImage);

@@ -12,12 +12,26 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+  cloud:
+    aws:
+          credentials:
+            access-key: test-access-key
+            secret-key: test-secret-key
+          s3:
+            bucket: test-bucket
+          region:
+            static: ap-northeast-2
 
 server:
   port: 8081
   error:
     include-message: always
     include-binding-errors: always
+
+admin:
+  email: admin@test.com
+  password: test1234!
+
 
 logging:
   level:

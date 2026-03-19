@@ -115,7 +115,7 @@ public class PostResponseDto {
             return ImageInfo.builder()
                     .id(postImage.getId())
                     .originalFileName(postImage.getOriginalFileName())
-                    .fileUrl("/uploads/post/" + postImage.getStoredFileName())
+                    .fileUrl(postImage.getFilePath())
                     .fileSize(postImage.getFileSize())
                     .displayOrder(postImage.getDisplayOrder())
                     .build();
