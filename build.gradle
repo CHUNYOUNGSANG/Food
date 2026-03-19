@@ -49,6 +49,9 @@ dependencies {
     // DevTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
+    // AWS S3 (Spring Cloud AWS)
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'
+
     // Database
     runtimeOnly 'com.mysql:mysql-connector-j'
 

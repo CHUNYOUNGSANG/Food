@@ -2,18 +2,19 @@ package project.food.global.file.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import project.food.global.config.FileStorageConfig;
 import project.food.global.exception.ErrorCode;
 import project.food.global.exception.FileUploadException;
 import project.food.global.file.dto.UploadedFileInfo;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +25,13 @@ import java.util.UUID;
 public class FileStorageService {
 
     private final FileStorageConfig fileStorageConfig;
+    private final S3Client s3Client;
+
+    @Value("${spring.cloud.aws.s3.bucket}")
+    private String bucket;
+
+    @Value("${spring.cloud.aws.region.static}")
+    private String region;
 
     private static final List<String> ALLOWED_EXTENSIONS =
             List.of("jpg", "jpeg", "png", "gif", "webp");
@@ -36,23 +44,26 @@ public class FileStorageService {
 
         String originalFileName = file.getOriginalFilename();
         String storedFileName = generateStoredFileName(originalFileName);
-
-        Path baseDir = Paths.get(fileStorageConfig.getUploadDir())
-                .toAbsolutePath()
-                .normalize();
-        Path uploadPath = baseDir.resolve(subDir);
+        String s3Key = subDir + "/" + storedFileName;
 
         try {
-            Files.createDirectories(uploadPath);
-            Path targetPath = uploadPath.resolve(storedFileName);
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(s3Key)
+                    .contentType(file.getContentType())
+                    .contentLength(file.getSize())
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+            String fileUrl = "https://" + bucket + ".s3." + region + ".amazonaws.com/" + s3Key;
 
             return UploadedFileInfo.builder()
                     .originalFileName(originalFileName)
                     .storedFileName(storedFileName)
-                    .filePath(targetPath.toString())
+                    .filePath(s3Key)
                     .fileSize(file.getSize())
-                    .fileUrl("/uploads/" + subDir + "/" + storedFileName)
+                    .fileUrl(fileUrl)
                     .build();
 
         } catch (IOException e) {
@@ -68,7 +79,6 @@ public class FileStorageService {
     public UploadedFileInfo saveProfileImage(MultipartFile file) {
         return storeFile(file, "profile");
     }
-
 
     /**
      * 여러 파일 저장
@@ -106,28 +116,27 @@ public class FileStorageService {
     }
 
     /**
-     * 파일 삭제
+     * 파일 삭제 (S3 key 또는 전체 S3 URL 전달)
      */
-    public void deleteFile(String storedFileName) {
+    public void deleteFile(String s3KeyOrUrl) {
 
-        log.debug("파일 삭제 시작: storedFileName={}", storedFileName);
+        String s3Key = s3KeyOrUrl.startsWith("https://")
+                ? s3KeyOrUrl.substring(s3KeyOrUrl.indexOf(".amazonaws.com/") + ".amazonaws.com/".length())
+                : s3KeyOrUrl;
+
+        log.debug("파일 삭제 시작: s3Key={}", s3Key);
 
         try {
-            Path filePath = Paths.get(fileStorageConfig.getUploadDir())
-                    .resolve(storedFileName)
-                    .normalize();
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(s3Key)
+                    .build();
 
-            boolean deleted = Files.deleteIfExists(filePath);
+            s3Client.deleteObject(deleteObjectRequest);
+            log.info("✅ 파일 삭제 성공: s3Key={}", s3Key);
 
-            if (deleted) {
-                log.info("✅ 파일 삭제 성공: storedFileName={}", storedFileName);
-            } else {
-                log.warn("⚠️ 파일이 존재하지 않음: storedFileName={}", storedFileName);
-            }
-
-        } catch (IOException e) {
-            log.error("❌ 파일 삭제 실패: storedFileName={}, error={}",
-                    storedFileName, e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("❌ 파일 삭제 실패: s3Key={}, error={}", s3Key, e.getMessage(), e);
             throw new FileUploadException(ErrorCode.FILE_DELETE_FAILED);
         }
     }
@@ -135,25 +144,25 @@ public class FileStorageService {
     /**
      * 여러 파일 삭제
      */
-    public void deleteFiles(List<String> storedFileNames) {
+    public void deleteFiles(List<String> s3Keys) {
 
-        log.info("다중 파일 삭제 시작: fileCount={}", storedFileNames.size());
+        log.info("다중 파일 삭제 시작: fileCount={}", s3Keys.size());
 
         int successCount = 0;
         int failCount = 0;
 
-        for (String fileName : storedFileNames) {
+        for (String key : s3Keys) {
             try {
-                deleteFile(fileName);
+                deleteFile(key);
                 successCount++;
             } catch (Exception e) {
                 failCount++;
-                log.error("❌ 파일 삭제 중 오류 발생: fileName={}", fileName);
+                log.error("❌ 파일 삭제 중 오류 발생: s3Key={}", key);
             }
         }
 
         log.info("✅ 다중 파일 삭제 완료: totalFiles={}, successCount={}, failCount={}",
-                storedFileNames.size(), successCount, failCount);
+                s3Keys.size(), successCount, failCount);
     }
 
     /**
@@ -163,20 +172,17 @@ public class FileStorageService {
 
         log.debug("파일 유효성 검증 시작: fileName={}", file.getOriginalFilename());
 
-        // 1. 빈 파일 확인
         if (file.isEmpty()) {
             log.error("❌ 빈 파일: fileName={}", file.getOriginalFilename());
             throw new FileUploadException(ErrorCode.EMPTY_FILE);
         }
 
-        // 2. 파일명 확인
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || originalFileName.isEmpty()) {
             log.error("❌ 잘못된 파일명: fileName=null or empty");
             throw new FileUploadException(ErrorCode.INVALID_FILE_NAME);
         }
 
-        // 3. 확장자 검증
         String extension = getFileExtension(originalFileName).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
             log.error("❌ 허용되지 않은 확장자: fileName={}, extension={}, allowedExtensions={}",
@@ -184,7 +190,6 @@ public class FileStorageService {
             throw new FileUploadException(ErrorCode.INVALID_FILE_TYPE);
         }
 
-        // 4. 파일 크기 검증 (10MB)
         long maxSize = 10 * 1024 * 1024;
         if (file.getSize() > maxSize) {
             log.error("❌ 파일 크기 초과: fileName={}, size={} bytes, maxSize={} bytes",
