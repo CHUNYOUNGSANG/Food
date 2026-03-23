@@ -45,7 +45,7 @@ jobs:
 
             docker stop food-app || true
             docker rm food-app || true
-            sudo fuser -k 8080/tcp || true
+            sudo kill -9 $(sudo lsof -t -i:8080) || true
 
             docker run -d \
               --name food-app \
