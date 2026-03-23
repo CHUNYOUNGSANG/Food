@@ -29,9 +29,13 @@ public class WebConfig implements WebMvcConfigurer {
                 "http://localhost:5501",
                 "http://127.0.0.1:5501",
                 "http://localhost:8000",
-                "http://127.0.0.1:8000"
+                "http://127.0.0.1:8000",
+                "https://dtcam9thqu1os.cloudfront.net",
+                "https://food-web-page.s3.ap-northeast-2.amazonaws.com",
+                "http://food-web-page.s3-website.ap-northeast-2.amazonaws.com",
+                "http://52.78.34.150"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
