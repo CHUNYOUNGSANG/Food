@@ -34,6 +34,7 @@ public class WebConfig implements WebMvcConfigurer {
                 "https://food-web-page.s3.ap-northeast-2.amazonaws.com",
                 "http://food-web-page.s3-website.ap-northeast-2.amazonaws.com",
                 "http://52.78.34.150"
+
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
@@ -43,6 +44,7 @@ public class WebConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
+
     }
 }
 
