@@ -35,7 +35,8 @@ public class WebConfig implements WebMvcConfigurer {
                 "http://food-web-page.s3-website.ap-northeast-2.amazonaws.com",
                 "http://52.78.34.150",
                 "http://fineeat.kro.kr",
-                "https://fineeat.kro.kr"
+                "https://fineeat.kro.kr",
+                "http://api.fineeat.kro.kr:8080"
 
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
