@@ -1,0 +1,7 @@
+.git
+.gradle
+build/
+*.pem
+application-secret.yml
+uploads/
+logs/
