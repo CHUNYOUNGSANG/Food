@@ -57,4 +57,7 @@ jobs:
               -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
               -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
               -e KAKAO_API_KEY=${{ secrets.KAKAO_API_KEY }} \
+              -e SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }} \
+              -e SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }} \
+              -e SPRING_CLOUD_AWS_REGION_STATIC=${{ secrets.AWS_S3_REGION }} \
               ${{ secrets.ECR_REPOSITORY }}:latest
