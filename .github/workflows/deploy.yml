@@ -1,0 +1,63 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ develop ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image to ECR
+        run: |
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+          docker push ${{ secrets.ECR_REPOSITORY }}:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+              docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+
+            docker pull ${{ secrets.ECR_REPOSITORY }}:latest
+
+            docker stop food-app || true
+            docker rm food-app || true
+            sudo kill -9 $(sudo lsof -t -i:8080) || true
+
+            docker run -d \
+              --name food-app \
+              --restart always \
+              -p 8080:8080 \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              -e DB_URL="jdbc:mysql://food-db.c3s0okm64zbr.ap-northeast-2.rds.amazonaws.com:3306/food?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8" \
+              -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              -e KAKAO_API_KEY=${{ secrets.KAKAO_API_KEY }} \
+              -e SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }} \
+              -e SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }} \
+              -e SPRING_CLOUD_AWS_REGION_STATIC=${{ secrets.AWS_S3_REGION }} \
+              ${{ secrets.ECR_REPOSITORY }}:latest

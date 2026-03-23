@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    container_name: food-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:mysql://food-db.c3s0okm64zbr.ap-northeast-2.rds.amazonaws.com:3306/food?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      KAKAO_API_KEY: ${KAKAO_API_KEY}
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
+    restart: always
+
+volumes:
+  uploads:
+  logs:
