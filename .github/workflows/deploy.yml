@@ -62,4 +62,5 @@ jobs:
               -e SPRING_CLOUD_AWS_REGION_STATIC=${{ secrets.AWS_S3_REGION }} \
               -e ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }} \
               -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
+              -e SPRING_CLOUD_AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }} \
               ${{ secrets.ECR_REPOSITORY }}:latest
