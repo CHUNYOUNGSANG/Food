@@ -30,8 +30,11 @@ public class SwaggerConfig {
                         .version("v1.0.0"))
                 .servers(List.of(
                         new Server()
+                                .url("http://fineeat.kro.kr")
+                                .description("운영 서버"),
+                        new Server()
                                 .url("http://52.78.34.150")
-                                .description("로컬 서버")
+                                .description("EC2 서버")
                 ))
                 // Authorize 버튼에 JWT 인증 추가
                 .components(new Components()
