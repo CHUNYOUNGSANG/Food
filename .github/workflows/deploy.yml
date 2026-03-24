@@ -41,14 +41,14 @@ jobs:
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
               docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
 
-            docker pull ${{ secrets.ECR_REPOSITORY }}:latest
-
             docker stop food-app || true
             docker rm food-app || true
             sudo kill -9 $(sudo lsof -t -i:8080) || true
 
             docker image prune -f
             docker system prune -f --volumes=false
+
+            docker pull ${{ secrets.ECR_REPOSITORY }}:latest
 
             docker run -d \
               --name food-app \
