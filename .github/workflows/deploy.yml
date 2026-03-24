@@ -47,6 +47,9 @@ jobs:
             docker rm food-app || true
             sudo kill -9 $(sudo lsof -t -i:8080) || true
 
+            docker image prune -f
+            docker system prune -f --volumes=false
+
             docker run -d \
               --name food-app \
               --restart always \
