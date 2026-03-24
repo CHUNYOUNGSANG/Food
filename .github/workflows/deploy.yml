@@ -43,6 +43,7 @@ jobs:
 
             docker stop food-app || true
             docker rm food-app || true
+            sudo kill -9 $(sudo lsof -t -i:8080) || true
 
             docker image prune -f
             docker system prune -f --volumes=false
