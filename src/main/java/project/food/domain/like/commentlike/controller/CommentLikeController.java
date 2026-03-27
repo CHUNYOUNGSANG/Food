@@ -85,7 +85,7 @@ public class CommentLikeController {
     }
 
     /**
-     * 댓글의 졸아요 개수 및 사용자의 좋아요 여부 조회
+     * 댓글의 좋아요 개수 및 사용자의 좋아요 여부 조회
      * @param memberId
      * @param commentId
      * @return 200 OK + 좋아요 개수 및 사용자의 좋아요 여부
@@ -117,6 +117,7 @@ public class CommentLikeController {
     })
     @GetMapping("/likes/member/{memberId}")
     public ResponseEntity<List<CommentLikeResponseDto>> getLikedCommentsByMember(
+            @AuthenticationPrincipal Long requesterId,
             @PathVariable Long memberId) {
         List<CommentLikeResponseDto> responseDto = commentLikeService.getLikedCommentsByMember(memberId);
         return ResponseEntity.ok(responseDto);

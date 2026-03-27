@@ -115,6 +115,7 @@ public class PostLikeController {
     })
     @GetMapping("/likes/member/{memberId}")
     public ResponseEntity<List<PostLikeResponseDto>> getLikedPostsByMember(
+            @AuthenticationPrincipal Long requesterId,
             @PathVariable Long memberId) {
         List<PostLikeResponseDto> responseDto = postLikeService.getLikedPostsByMember(memberId);
         return ResponseEntity.ok(responseDto);

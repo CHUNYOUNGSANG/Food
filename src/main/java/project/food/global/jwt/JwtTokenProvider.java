@@ -31,8 +31,8 @@ public class JwtTokenProvider {
         return createToken(memberId, email, role, accessTokenExpiration);
     }
 
-    public String createRefreshToken(Long memberId) {
-        return createToken(memberId, null, null, refreshTokenExpiration);
+    public String createRefreshToken(Long memberId, String role) {
+        return createToken(memberId, null, role, refreshTokenExpiration);
     }
 
     private String createToken(Long memberId, String email, String role, long expiration) {
@@ -57,6 +57,11 @@ public class JwtTokenProvider {
     public Long getMemberIdFromToken(String token) {
         Claims claims = parseClaims(token);
         return Long.parseLong(claims.getSubject());
+    }
+
+    public String getRoleFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return claims.get("role", String.class);
     }
 
     public boolean validateToken(String token) {

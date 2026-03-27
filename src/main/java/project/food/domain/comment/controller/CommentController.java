@@ -70,7 +70,7 @@ public class CommentController {
 
         CommentResponseDto response = commentService.createComment(postId, memberId, requestDto);
 
-        log.info("✅ 댓글 작성 완료: commentId={}, postId={}", response.getId(), postId);
+        log.info("댓글 작성 완료: commentId={}, postId={}", response.getId(), postId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -97,7 +97,7 @@ public class CommentController {
 
         List<CommentResponseDto> comments = commentService.getCommentsByPostId(postId);
 
-        log.info("✅ 댓글 목록 조회 완료: postId={}, commentCount={}", postId, comments.size());
+        log.info("댓글 목록 조회 완료: postId={}, commentCount={}", postId, comments.size());
 
         return ResponseEntity.ok(comments);
     }
@@ -125,7 +125,7 @@ public class CommentController {
 
         List<CommentResponseDto> comments = commentService.getCommentsByMemberId(memberId);
 
-        log.info("✅ 회원 댓글 목록 조회 완료: memberId={}, commentCount={}", memberId, comments.size());
+        log.info("회원 댓글 목록 조회 완료: memberId={}, commentCount={}", memberId, comments.size());
 
         return ResponseEntity.ok(comments);
     }
@@ -163,7 +163,7 @@ public class CommentController {
 
         CommentResponseDto response = commentService.updateComment(commentId, memberId, requestDto);
 
-        log.info("✅ 댓글 수정 완료: commentId={}", commentId);
+        log.info("댓글 수정 완료: commentId={}", commentId);
 
         return ResponseEntity.ok(response);
     }
@@ -192,11 +192,11 @@ public class CommentController {
             @Parameter(description = "삭제 요청자 회원 ID", required = true)
             @AuthenticationPrincipal Long memberId) {
 
-        log.info("댓글 삭제 요청: commentId={}, memberID={}, postId={}", commentId, memberId, postId);
+        log.info("댓글 삭제 요청: commentId={}, memberId={}, postId={}", commentId, memberId, postId);
 
         commentService.deleteComment(commentId, memberId);
 
-        log.info("✅ 댓글 삭제 완료: commentId={}", commentId);
+        log.info("댓글 삭제 완료: commentId={}", commentId);
 
         return ResponseEntity.noContent().build();
     }

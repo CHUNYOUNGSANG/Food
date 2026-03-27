@@ -7,8 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +24,6 @@ import project.food.domain.post.service.PostService;
 import project.food.global.api.kakao.local.dto.KakaoKeywordResponse;
 import project.food.global.api.kakao.local.service.KakaoLocalService;
 
-import java.util.List;
 
 /**
  * Post Controller
@@ -57,7 +59,7 @@ public class PostController {
             @Parameter(description = "작성자 회원 ID", required = true)
             @AuthenticationPrincipal Long memberId,
             @Parameter(description = "게시글 생성 요청 데이터", required = true)
-            @ModelAttribute PostRequestDto request) {
+            @Valid @ModelAttribute PostRequestDto request) {
 
         log.info("게시글 생성 요청: memberId={}, title={}, restaurantId={}, rating={}, imageCount={}",
                 memberId,
@@ -68,7 +70,7 @@ public class PostController {
 
         PostResponseDto response = postService.createPost(memberId, request);
 
-        log.info("✅ 게시글 생성 완료: postId={}, memberId={}", response.getId(), memberId);
+        log.info("게시글 생성 완료: postId={}, memberId={}", response.getId(), memberId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -82,13 +84,15 @@ public class PostController {
     @ApiResponse(responseCode = "200", description = "조회 성공",
             content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping
-    public ResponseEntity<List<PostResponseDto>> getAllPosts() {
+    public ResponseEntity<Page<PostResponseDto>> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        log.info("게시글 전체 목록 조회 요청");
+        log.info("게시글 전체 목록 조회 요청: page={}, size={}", page, size);
 
-        List<PostResponseDto> posts = postService.getAllPosts();
+        Page<PostResponseDto> posts = postService.getAllPosts(PageRequest.of(page, size));
 
-        log.info("✅ 게시글 전체 목록 조회 완료: postCount={}", posts.size());
+        log.info("게시글 전체 목록 조회 완료: totalElements={}", posts.getTotalElements());
 
         return ResponseEntity.ok(posts);
     }
@@ -114,7 +118,7 @@ public class PostController {
 
         PostResponseDto response = postService.getPost(postId);
 
-        log.info("✅ 게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
+        log.info("게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
                 postId, response.getTitle(), response.getViewCount());
 
         return ResponseEntity.ok(response);
@@ -142,7 +146,7 @@ public class PostController {
             @Parameter(description = "수정 요청자 회원 ID", required = true)
             @AuthenticationPrincipal Long memberId,
             @Parameter(description = "게시글 수정 데이터 (multipart/form-data)", required = true)
-            @ModelAttribute PostUpdateDto request) {
+            @Valid @ModelAttribute PostUpdateDto request) {
 
         log.info("게시글 수정 요청: postId={}, memberId={}, title={}, newImageCount={}, deleteImageCount={}",
                 postId,
@@ -153,7 +157,7 @@ public class PostController {
 
         PostResponseDto response = postService.updatePost(postId, memberId, request);
 
-        log.info("✅ 게시글 수정 완료: postId={}, memberId={}", postId, memberId);
+        log.info("게시글 수정 완료: postId={}, memberId={}", postId, memberId);
 
         return ResponseEntity.ok(response);
     }
@@ -182,7 +186,7 @@ public class PostController {
 
         postService.deletePost(postId, memberId);
 
-        log.info("✅ 게시글 삭제 완료: postId={}, memberId={}", postId, memberId);
+        log.info("게시글 삭제 완료: postId={}, memberId={}", postId, memberId);
 
         return ResponseEntity.noContent().build();
     }
@@ -200,16 +204,18 @@ public class PostController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<PostResponseDto>> getPostsByMember(
+    public ResponseEntity<Page<PostResponseDto>> getPostsByMember(
             @Parameter(description = "회원 ID", required = true)
-            @PathVariable Long memberId) {
+            @PathVariable Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         log.info("회원별 게시글 조회 요청: memberId={}", memberId);
 
-        List<PostResponseDto> posts = postService.getPostsByMember(memberId);
+        Page<PostResponseDto> posts = postService.getPostsByMember(memberId, PageRequest.of(page, size));
 
-        log.info("✅ 회원별 게시글 조회 완료: memberId={}, postCount={}",
-                memberId, posts.size());
+        log.info("회원별 게시글 조회 완료: memberId={}, postCount={}",
+                memberId, posts.getTotalElements());
 
         return ResponseEntity.ok(posts);
     }
@@ -224,16 +230,18 @@ public class PostController {
     @ApiResponse(responseCode = "200", description = "검색 성공",
             content = @Content(schema = @Schema(implementation = PostResponseDto.class)))
     @GetMapping("/search")
-    public ResponseEntity<List<PostResponseDto>> searchPosts(
+    public ResponseEntity<Page<PostResponseDto>> searchPosts(
             @Parameter(description = "검색 키워드", required = true, example = "맛집")
-            @RequestParam String keyword) {
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         log.info("게시글 검색 요청: keyword={}", keyword);
 
-        List<PostResponseDto> posts = postService.searchPosts(keyword);
+        Page<PostResponseDto> posts = postService.searchPosts(keyword, PageRequest.of(page, size));
 
-        log.info("✅ 게시글 검색 완료: keyword={}, resultCount={}",
-                keyword, posts.size());
+        log.info("게시글 검색 완료: keyword={}, resultCount={}",
+                keyword, posts.getTotalElements());
 
         return ResponseEntity.ok(posts);
     }
@@ -262,7 +270,7 @@ public class PostController {
 
         KakaoKeywordResponse result = kakaoLocalService.searchPlaceByKeyword(keyword, page);
 
-        log.info("✅ 음식점 검색 완료: keyword={}, resultCount={}",
+        log.info("음식점 검색 완료: keyword={}, resultCount={}",
                 keyword, result.getDocuments().size());
 
         return ResponseEntity.ok(result);

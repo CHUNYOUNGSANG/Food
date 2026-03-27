@@ -41,7 +41,7 @@ public class KakaoLocalService {
                 .queryParam("query", keyword)   // "강남맛집" 그대로 넣어도 됨
                 .queryParam("page", page)
                 .queryParam("size", 15)
-                .encode(StandardCharsets.UTF_8) // ✅ 여기서 인코딩
+                .encode(StandardCharsets.UTF_8) // 여기서 인코딩
                 .build()
                 .toUri();
 
@@ -69,7 +69,7 @@ public class KakaoLocalService {
             int count = (body.getDocuments() == null) ? 0 : body.getDocuments().size();
             long elapsed = System.currentTimeMillis() - startedAt;
 
-            log.info("✅ [KAKAO][LOCAL] 성공 keyword={} page={} count={} elapsedMs={}",
+            log.info("[KAKAO][LOCAL] 성공 keyword={} page={} count={} elapsedMs={}",
                     keyword, page, count, elapsed);
 
             return body;
@@ -83,7 +83,7 @@ public class KakaoLocalService {
 
         } catch (RestClientException e) {
             long elapsed = System.currentTimeMillis() - startedAt;
-            log.error("⚠️ [KAKAO][LOCAL] 호출 오류 keyword={} page={} elapsedMs={} error={}",
+            log.error("[KAKAO][LOCAL] 호출 오류 keyword={} page={} elapsedMs={} error={}",
                     keyword, page, elapsed, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_ERROR);
         }
@@ -93,17 +93,17 @@ public class KakaoLocalService {
         HttpStatusCode status = e.getStatusCode();
 
         if (status == HttpStatus.UNAUTHORIZED) {
-            log.error("❌ [KAKAO][LOCAL] 인증 실패 {}={} status={} msg={}",
+            log.error("[KAKAO][LOCAL] 인증 실패 {}={} status={} msg={}",
                     keyName, keyValue, status, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_UNAUTHORIZED);
         }
         if (status == HttpStatus.TOO_MANY_REQUESTS) {
-            log.error("❌ [KAKAO][LOCAL] 호출 한도 초과 {}={} status={} msg={}",
+            log.error("[KAKAO][LOCAL] 호출 한도 초과 {}={} status={} msg={}",
                     keyName, keyValue, status, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_RATE_LIMIT);
         }
 
-        log.error("❌ [KAKAO][LOCAL] HTTP 오류 {}={} status={} msg={}",
+        log.error("[KAKAO][LOCAL] HTTP 오류 {}={} status={} msg={}",
                 keyName, keyValue, status, e.getMessage());
     }
 }

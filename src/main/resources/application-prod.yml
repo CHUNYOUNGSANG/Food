@@ -13,12 +13,10 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-        default_batch_fetch_size: 100
         query.in_clause_parameter_padding: true
 
   cache:
@@ -26,12 +24,26 @@ spring:
     caffeine:
       spec: maximumSize=1000,expireAfterWrite=600s
 
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+      s3:
+        bucket: ${AWS_S3_BUCKET}
+      region:
+        static: ${AWS_REGION}
+
 kakao:
   api:
     key: ${KAKAO_API_KEY}
 
 jwt:
   secret: ${JWT_SECRET}
+
+admin:
+  email: ${ADMIN_EMAIL}
+  password: ${ADMIN_PASSWORD}
 
 server:
   port: 8080
@@ -48,6 +60,9 @@ server:
       min-spare: 10
     max-connections: 8192
     accept-count: 100
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 logging:
   level:

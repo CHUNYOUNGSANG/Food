@@ -3,6 +3,7 @@ package project.food.domain.post.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +22,7 @@ public class PostUpdateDto {
      * 게시글 제목
      */
     @Schema(description = "게시글 제목", example = "수정된 제목")
+    @NotBlank(message = "제목은 필수입니다.")
     @Size(max = 100, message = "제목은 100자 이내로 입력해주세요.")
     private String title;
 
@@ -28,6 +30,7 @@ public class PostUpdateDto {
      * 게시글 내용
      */
     @Schema(description = "게시글 내용", example = "수정된 내용입니다.")
+    @NotBlank(message = "내용은 필수입니다.")
     private String content;
 
     /**

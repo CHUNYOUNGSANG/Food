@@ -1,5 +1,6 @@
 package project.food.domain.comment.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param postId 게시글 ID
      * @return 댓글 목록 (오래된 댓글이 먼저)
      */
+    @EntityGraph(attributePaths = {"member"})
     List<Comment> findByPost_IdOrderByCreatedAtAsc(Long postId);
 
     /**
@@ -30,6 +32,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
      * @param memberId 회원 ID
      * @return 댓글 목록 (최신 댓글이 먼저)
      */
+    @EntityGraph(attributePaths = {"member"})
     List<Comment> findByMember_IdAndDeletedFalseOrderByCreatedAtDesc(Long memberId);
 
     /**

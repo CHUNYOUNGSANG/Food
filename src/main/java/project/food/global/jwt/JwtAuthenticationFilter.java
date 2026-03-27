@@ -32,13 +32,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
             Long memberId = jwtTokenProvider.getMemberIdFromToken(token);
+            String role = jwtTokenProvider.getRoleFromToken(token);
+
+            String authority = (role != null) ? role : "ROLE_USER";
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(memberId, null,
-                            List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                            List.of(new SimpleGrantedAuthority(authority)));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("인증 완료: memberId = {}", memberId);
+            log.debug("인증 완료: memberId = {}, role = {}", memberId, authority);
         }
 
         filterChain.doFilter(request, response);

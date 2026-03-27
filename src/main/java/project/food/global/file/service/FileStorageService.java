@@ -3,6 +3,7 @@ package project.food.global.file.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import project.food.global.config.FileStorageConfig;
@@ -20,9 +21,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Profile("prod")
 @RequiredArgsConstructor
 @Slf4j
-public class FileStorageService {
+public class FileStorageService implements FileStorage {
 
     private final FileStorageConfig fileStorageConfig;
     private final S3Client s3Client;
@@ -39,12 +41,12 @@ public class FileStorageService {
     /**
      * 단일 파일 저장
      */
-    private UploadedFileInfo storeFile(MultipartFile file, String subDir) {
+    private UploadedFileInfo storeFile(MultipartFile file, String subDir, Long memberId) {
         validateFile(file);
 
         String originalFileName = file.getOriginalFilename();
         String storedFileName = generateStoredFileName(originalFileName);
-        String s3Key = subDir + "/" + storedFileName;
+        String s3Key = subDir + "/" + memberId + "/" + storedFileName;
 
         try {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -72,24 +74,27 @@ public class FileStorageService {
         }
     }
 
-    public UploadedFileInfo savePostImage(MultipartFile file) {
-        return storeFile(file, "post");
+    @Override
+    public UploadedFileInfo savePostImage(MultipartFile file, Long memberId) {
+        return storeFile(file, "post", memberId);
     }
 
-    public UploadedFileInfo saveProfileImage(MultipartFile file) {
-        return storeFile(file, "profile");
+    @Override
+    public UploadedFileInfo saveProfileImage(MultipartFile file, Long memberId) {
+        return storeFile(file, "profile", memberId);
     }
 
     /**
      * 여러 파일 저장
      */
-    public List<UploadedFileInfo> storeFiles(List<MultipartFile> files) {
+    @Override
+    public List<UploadedFileInfo> storeFiles(List<MultipartFile> files, Long memberId) {
 
-        log.info("다중 파일 저장 시작: fileCount={}, maxAllowed={}",
-                files.size(), fileStorageConfig.getMaxFileCount());
+        log.info("다중 파일 저장 시작: memberId={}, fileCount={}, maxAllowed={}",
+                memberId, files.size(), fileStorageConfig.getMaxFileCount());
 
         if (files.size() > fileStorageConfig.getMaxFileCount()) {
-            log.warn("⚠️ 파일 개수 초과: requestCount={}, maxAllowed={}",
+            log.warn("파일 개수 초과: requestCount={}, maxAllowed={}",
                     files.size(), fileStorageConfig.getMaxFileCount());
             throw new FileUploadException(ErrorCode.FILE_COUNT_EXCEEDED);
         }
@@ -100,7 +105,7 @@ public class FileStorageService {
 
         for (MultipartFile file : files) {
             if (!file.isEmpty()) {
-                UploadedFileInfo fileInfo = savePostImage(file);
+                UploadedFileInfo fileInfo = savePostImage(file, memberId);
                 uploadedFiles.add(fileInfo);
                 successCount++;
             } else {
@@ -109,8 +114,8 @@ public class FileStorageService {
             }
         }
 
-        log.info("✅ 다중 파일 저장 완료: totalFiles={}, successCount={}, emptyCount={}",
-                files.size(), successCount, emptyCount);
+        log.info("다중 파일 저장 완료: memberId={}, totalFiles={}, successCount={}, emptyCount={}",
+                memberId, files.size(), successCount, emptyCount);
 
         return uploadedFiles;
     }
@@ -133,10 +138,10 @@ public class FileStorageService {
                     .build();
 
             s3Client.deleteObject(deleteObjectRequest);
-            log.info("✅ 파일 삭제 성공: s3Key={}", s3Key);
+            log.info("파일 삭제 성공: s3Key={}", s3Key);
 
         } catch (Exception e) {
-            log.error("❌ 파일 삭제 실패: s3Key={}, error={}", s3Key, e.getMessage(), e);
+            log.error("파일 삭제 실패: s3Key={}, error={}", s3Key, e.getMessage(), e);
             throw new FileUploadException(ErrorCode.FILE_DELETE_FAILED);
         }
     }
@@ -157,11 +162,11 @@ public class FileStorageService {
                 successCount++;
             } catch (Exception e) {
                 failCount++;
-                log.error("❌ 파일 삭제 중 오류 발생: s3Key={}", key);
+                log.error("파일 삭제 중 오류 발생: s3Key={}", key);
             }
         }
 
-        log.info("✅ 다중 파일 삭제 완료: totalFiles={}, successCount={}, failCount={}",
+        log.info("다중 파일 삭제 완료: totalFiles={}, successCount={}, failCount={}",
                 s3Keys.size(), successCount, failCount);
     }
 
@@ -173,31 +178,31 @@ public class FileStorageService {
         log.debug("파일 유효성 검증 시작: fileName={}", file.getOriginalFilename());
 
         if (file.isEmpty()) {
-            log.error("❌ 빈 파일: fileName={}", file.getOriginalFilename());
+            log.error("빈 파일: fileName={}", file.getOriginalFilename());
             throw new FileUploadException(ErrorCode.EMPTY_FILE);
         }
 
         String originalFileName = file.getOriginalFilename();
         if (originalFileName == null || originalFileName.isEmpty()) {
-            log.error("❌ 잘못된 파일명: fileName=null or empty");
+            log.error("잘못된 파일명: fileName=null or empty");
             throw new FileUploadException(ErrorCode.INVALID_FILE_NAME);
         }
 
         String extension = getFileExtension(originalFileName).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            log.error("❌ 허용되지 않은 확장자: fileName={}, extension={}, allowedExtensions={}",
+            log.error("허용되지 않은 확장자: fileName={}, extension={}, allowedExtensions={}",
                     originalFileName, extension, ALLOWED_EXTENSIONS);
             throw new FileUploadException(ErrorCode.INVALID_FILE_TYPE);
         }
 
         long maxSize = 10 * 1024 * 1024;
         if (file.getSize() > maxSize) {
-            log.error("❌ 파일 크기 초과: fileName={}, size={} bytes, maxSize={} bytes",
+            log.error("파일 크기 초과: fileName={}, size={} bytes, maxSize={} bytes",
                     originalFileName, file.getSize(), maxSize);
             throw new FileUploadException(ErrorCode.FILE_SIZE_EXCEEDED);
         }
 
-        log.debug("✅ 파일 유효성 검증 통과: fileName={}, extension={}, size={} bytes",
+        log.debug("파일 유효성 검증 통과: fileName={}, extension={}, size={} bytes",
                 originalFileName, extension, file.getSize());
     }
 
@@ -221,7 +226,7 @@ public class FileStorageService {
     private String getFileExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf(".");
         if (lastDotIndex == -1) {
-            log.error("❌ 확장자 없음: fileName={}", fileName);
+            log.error("확장자 없음: fileName={}", fileName);
             throw new FileUploadException(ErrorCode.INVALID_FILE_NAME);
         }
         return fileName.substring(lastDotIndex + 1);

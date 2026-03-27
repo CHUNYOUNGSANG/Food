@@ -1,7 +1,7 @@
 spring:
   application:
     name: Food
-  profiles: { include: secret, active: dev }
+  profiles: { include: secret }
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
@@ -13,6 +13,7 @@ spring:
       hibernate:
         format_sql: true
         use_sql_comments: true
+        default_batch_fetch_size: 100
   servlet:
     multipart:
       enabled: true               # 파일 업로드 활성화
@@ -22,15 +23,12 @@ spring:
 
 file:
   upload:
-    dir: ./uploads    # 파일 저장 경로 (프로제트 루트 기준)
     max-file-count: 10      # 게시글당 최대 파일 개수
 
 logging:
   level:
     root: INFO
     project.food: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level - %msg%n"
 

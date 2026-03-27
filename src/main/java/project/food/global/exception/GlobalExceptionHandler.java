@@ -7,6 +7,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 전역 예외 처리 핸들러
@@ -34,7 +35,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Validation 에외 처리
+     * Validation 예외 처리
      * @Valid 검증 실패 시 발생
      * @param e MethodArgumentNotValidException
      * @return ErrorResponse
@@ -64,6 +65,12 @@ public class GlobalExceptionHandler {
         ErrorResponse response = ErrorResponse.of(ErrorCode.METHOD_NOT_ALLOWED);
 
         return ResponseEntity.status(ErrorCode.METHOD_NOT_ALLOWED.getStatus()).body(response);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException e) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(404).body(response);
     }
 
     /**

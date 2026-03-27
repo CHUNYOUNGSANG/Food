@@ -36,15 +36,16 @@ public class SecurityConfig {
                                 .accessDeniedHandler(jwtAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/members",
+                                "/",
+                                "/uploads/**",
                                 "/api/members/login",
                                 "/api/members/refresh",
                                 "/api/members/check-email",
                                 "/api/members/check-nickname",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/uploads/**"
+                                "/v3/api-docs/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/members").permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/api/posts/**",
                                 "/api/tags/**",
@@ -54,7 +55,12 @@ public class SecurityConfig {
                                 "/api/members/{memberId}/comments"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET,
+                                "/api/posts/likes/member/**",
+                                "/api/comments/likes/member/**"
+                        ).authenticated()
+                        .requestMatchers(HttpMethod.GET,
                                 "/api/members").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);

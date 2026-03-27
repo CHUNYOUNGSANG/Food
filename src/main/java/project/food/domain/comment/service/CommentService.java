@@ -52,14 +52,14 @@ public class CommentService {
         // 1. 게시글 존재 확인
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> {
-                    log.error("❌ 게시글 찾기 실패: postId={}", postId);
+                    log.error("게시글 찾기 실패: postId={}", postId);
                     return new CustomException(ErrorCode.POST_NOT_FOUND);
                 });
 
         // 2. 회원 존재 확인
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> {
-                    log.error("❌ 회원 찾기 실패: memberId={}", memberId);
+                    log.error("회원 찾기 실패: memberId={}", memberId);
                     return new CustomException(ErrorCode.MEMBER_NOT_FOUND);
                 });
 
@@ -79,7 +79,7 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        log.info("✅ 댓글 생성 완료: commentId={}, postId={}, memberId={}, isReply={}",
+        log.info("댓글 생성 완료: commentId={}, postId={}, memberId={}, isReply={}",
                 savedComment.getId(), postId, memberId,
                 requestDto.getParentCommentId() != null);
 
@@ -99,13 +99,13 @@ public class CommentService {
 
         // 게시글 존재 확인
         if (!postRepository.existsById(postId)) {
-            log.error("❌ 게시글 존재하지 않음: postId={}", postId);
+            log.error("게시글 존재하지 않음: postId={}", postId);
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
         List<Comment> comments = commentRepository.findByPost_IdOrderByCreatedAtAsc(postId);
 
-        log.info("✅ 댓글 목록 조회 완료: postId={}, totalCount={}, deletedCount={}",
+        log.info("댓글 목록 조회 완료: postId={}, totalCount={}, deletedCount={}",
                 postId, comments.size(),
                 comments.stream().filter(Comment::isDeleted).count());
 
@@ -126,14 +126,14 @@ public class CommentService {
         log.debug("회원 댓글 목록 조회 시작: memberId={}", memberId);
 
         if (!memberRepository.existsById(memberId)) {
-            log.error("❌ 회원 존재하지 않음: memberId={}", memberId);
+            log.error("회원 존재하지 않음: memberId={}", memberId);
             throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         List<Comment> comments = commentRepository
                 .findByMember_IdAndDeletedFalseOrderByCreatedAtDesc(memberId);
 
-        log.info("✅ 회원 댓글 목록 조회 완료: memberId={}, commentCount={}",
+        log.info("회원 댓글 목록 조회 완료: memberId={}, commentCount={}",
                 memberId, comments.size());
 
         return comments.stream()
@@ -157,20 +157,20 @@ public class CommentService {
         // 1. 댓글 존재 확인
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> {
-                    log.error("❌ 댓글 찾기 실패: commentId={}", commentId);
+                    log.error("댓글 찾기 실패: commentId={}", commentId);
                     return new CustomException(ErrorCode.COMMENT_NOT_FOUND);
                 });
 
         // 2. 삭제된 댓글인지 확인
         if (comment.isDeleted()) {
-            log.warn("⚠️ 삭제된 댓글 수정 시도: commentId={}, memberId={}",
+            log.warn("삭제된 댓글 수정 시도: commentId={}, memberId={}",
                     commentId, memberId);
             throw new CustomException(ErrorCode.COMMENT_ALREADY_DELETED);
         }
 
         // 3. 작성자 본인 확인
         if (!comment.isWriter(memberId)) {
-            log.warn("⚠️ 댓글 수정 권한 없음: commentId={}, requestMemberId={}, writerMemberId={}",
+            log.warn("댓글 수정 권한 없음: commentId={}, requestMemberId={}, writerMemberId={}",
                     commentId, memberId, comment.getMember().getId());
             throw new CustomException(ErrorCode.COMMENT_AUTHOR_MISMATCH);
         }
@@ -179,7 +179,7 @@ public class CommentService {
         String oldContent = comment.getContent();
         comment.updateContent(requestDto.getContent());
 
-        log.info("✅ 댓글 수정 완료: commentId={}, memberId={}, contentChanged={}",
+        log.info("댓글 수정 완료: commentId={}, memberId={}, contentChanged={}",
                 commentId, memberId, !oldContent.equals(requestDto.getContent()));
 
         return CommentResponseDto.from(comment);
@@ -206,13 +206,13 @@ public class CommentService {
         // 1. 댓글 존재 확인
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> {
-                    log.error("❌ 댓글 찾기 실패: commentId={}", commentId);
+                    log.error("댓글 찾기 실패: commentId={}", commentId);
                     return new CustomException(ErrorCode.COMMENT_NOT_FOUND);
                 });
 
         // 2. 이미 삭제된 댓글인지 확인
         if (comment.isDeleted()) {
-            log.warn("⚠️ 이미 삭제된 댓글 삭제 시도: commentId={}, memberId={}",
+            log.warn("이미 삭제된 댓글 삭제 시도: commentId={}, memberId={}",
                     commentId, memberId);
             throw new CustomException(ErrorCode.COMMENT_ALREADY_DELETED);
         }
@@ -222,7 +222,7 @@ public class CommentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         if (!comment.isWriter(memberId) && !requester.isAdmin()) {
-            log.warn("⚠️ 댓글 삭제 권한 없음: commentId={}, requestMemberId={}, writerMemberId={}",
+            log.warn("댓글 삭제 권한 없음: commentId={}, requestMemberId={}, writerMemberId={}",
                     commentId, memberId, comment.getMember().getId());
             throw new CustomException(ErrorCode.COMMENT_AUTHOR_MISMATCH);
         }
@@ -234,19 +234,19 @@ public class CommentService {
         if (hasReplies) {
             // 4-1. 대댓글이 있으면 논리 삭제 (좋아요는 유지)
             comment.softDelete();
-            log.info("✅ 댓글 논리 삭제 완료 (대댓글 있음): commentId={}, memberId={}",
+            log.info("댓글 논리 삭제 완료 (대댓글 있음): commentId={}, memberId={}",
                     commentId, memberId);
         } else {
             // 4-2. 대댓글이 없으면 완전 삭제
             Long parentCommentId = comment.getParentCommentId();
             boolean isReply = comment.isReply();
 
-            // ⭐ 댓글 좋아요 먼저 삭제 (외래키 제약조건)
+            // 댓글 좋아요 먼저 삭제 (외래키 제약조건)
             commentLikeRepository.deleteByCommentId(commentId);
             log.debug("댓글 좋아요 삭제 완료: commentId={}", commentId);
 
             commentRepository.delete(comment);
-            log.info("✅ 댓글 완전 삭제 완료: commentId={}, memberId={}, isReply={}",
+            log.info("댓글 완전 삭제 완료: commentId={}, memberId={}, isReply={}",
                     commentId, memberId, isReply);
 
             // 4-3. 대댓글이었다면 부모 댓글 정리
@@ -277,13 +277,13 @@ public class CommentService {
 
         Comment parentComment = commentRepository.findById(parentCommentId)
                 .orElseThrow(() -> {
-                    log.error("❌ 부모 댓글 찾기 실패: parentCommentId={}", parentCommentId);
+                    log.error("부모 댓글 찾기 실패: parentCommentId={}", parentCommentId);
                     return new CustomException(ErrorCode.INVALID_PARENT_COMMENT);
                 });
 
         // 부모 댓글이 같은 게시글에 속하는지 확인
         if (!parentComment.getPostId().equals(postId)) {
-            log.error("❌ 부모 댓글이 다른 게시글에 속함: parentCommentId={}, " +
+            log.error("부모 댓글이 다른 게시글에 속함: parentCommentId={}, " +
                             "expectedPostId={}, actualPostId={}",
                     parentCommentId, postId, parentComment.getPostId());
             throw new CustomException(ErrorCode.INVALID_PARENT_COMMENT);
@@ -291,12 +291,12 @@ public class CommentService {
 
         // 부모 댓글이 삭제되지 않았는지 확인
         if (parentComment.isDeleted()) {
-            log.error("❌ 삭제된 댓글에 대댓글 작성 시도: parentCommentId={}",
+            log.error("삭제된 댓글에 대댓글 작성 시도: parentCommentId={}",
                     parentCommentId);
             throw new CustomException(ErrorCode.INVALID_PARENT_COMMENT);
         }
 
-        log.debug("✅ 부모 댓글 검증 완료: parentCommentId={}", parentCommentId);
+        log.debug("부모 댓글 검증 완료: parentCommentId={}", parentCommentId);
     }
 
     /**
@@ -328,8 +328,9 @@ public class CommentService {
                 .existsByParentCommentId(parentCommentId);
 
         if (!hasRemainingReplies) {
+            commentLikeRepository.deleteByCommentId(parentCommentId);
             commentRepository.delete(parentComment);
-            log.info("✅ 부모 댓글 완전 삭제 완료 (모든 대댓글 삭제됨): parentCommentId={}",
+            log.info("부모 댓글 완전 삭제 완료 (모든 대댓글 삭제됨): parentCommentId={}",
                     parentCommentId);
         } else {
             log.debug("부모 댓글 정리 불필요 (대댓글 남아있음): parentCommentId={}",

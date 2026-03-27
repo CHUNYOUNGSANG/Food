@@ -19,7 +19,11 @@ import java.util.List;
  * - BaseTimeEntity 상속으로 createdAt, updatedAt 자동관리
  */
 @Entity
-@Table(name = "post")
+@Table(name = "post", indexes = {
+        @Index(name = "idx_post_member_id",     columnList = "member_id"),
+        @Index(name = "idx_post_restaurant_id", columnList = "restaurant_id"),
+        @Index(name = "idx_post_created_at",    columnList = "created_at")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

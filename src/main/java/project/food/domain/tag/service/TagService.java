@@ -30,17 +30,17 @@ public class TagService {
         log.debug("태그 생성 시작: name={}", request.getName());
 
         if (tagRepository.existsByName(request.getName())) {
-            log.warn("⚠️태그 이름 중복: name={}", request.getName());
+            log.warn("태그 이름 중복: name={}", request.getName());
             throw new CustomException(ErrorCode.DUPLICATE_TAG_NAME);
         }
 
         Tag tag = Tag.builder()
-                .name((request.getName()))
+                .name(request.getName())
                 .build();
 
         Tag savedTag = tagRepository.save(tag);
 
-        log.info("✅태그 생성 완료: tagId={}, name={}", savedTag.getId(), request.getName());
+        log.info("태그 생성 완료: tagId={}, name={}", savedTag.getId(), request.getName());
 
         return TagResponseDto.from(savedTag);
     }
@@ -53,7 +53,7 @@ public class TagService {
 
         List<Tag> tags = tagRepository.findAll();
 
-        log.info("✅태그 전체 목록 조회 완료: totalCount={}", tags.size());
+        log.info("태그 전체 목록 조회 완료: totalCount={}", tags.size());
 
         return tags.stream()
                 .map(TagResponseDto::from)
@@ -69,11 +69,11 @@ public class TagService {
 
         Tag tag = tagRepository.findById(tagId)
                 .orElseThrow(() -> {
-                    log.error("❌태그 찾기 실패: tagId={}", tagId);
+                    log.error("태그 찾기 실패: tagId={}", tagId);
                     return new CustomException(ErrorCode.TAG_NOT_FOUND);
                 });
 
-        log.info("✅태그 조회 완료: tagId={}, name={}", tag.getId(), tag.getName());
+        log.info("태그 조회 완료: tagId={}, name={}", tag.getId(), tag.getName());
 
         return TagResponseDto.from(tag);
     }
@@ -88,12 +88,12 @@ public class TagService {
 
         Tag tag = tagRepository.findById(tagId)
                 .orElseThrow(() -> {
-                    log.error("❌태그 찾기 실패: tagId={}", tagId);
+                    log.error("태그 찾기 실패: tagId={}", tagId);
                     return new CustomException(ErrorCode.TAG_NOT_FOUND);
                 });
 
         if (tagRepository.existsByName(request.getName()) && !tag.getName().equals(request.getName())) {
-            log.warn("⚠️태그 이름 중복: name={}", request.getName());
+            log.warn("태그 이름 중복: name={}", request.getName());
 
             throw new CustomException(ErrorCode.DUPLICATE_TAG_NAME);
         }
@@ -101,7 +101,7 @@ public class TagService {
         String oldName = tag.getName();
         tag.updateName(request.getName());
 
-        log.info("✅태그 수정 완료: tagId={}, {} -> {}", tagId, oldName, tag.getName());
+        log.info("태그 수정 완료: tagId={}, {} -> {}", tagId, oldName, tag.getName());
 
         return TagResponseDto.from(tag);
     }
@@ -115,13 +115,13 @@ public class TagService {
 
         Tag tag = tagRepository.findById(tagId)
                 .orElseThrow(() -> {
-                    log.error("❌태그 찾기 실패: tagId={}", tagId);
+                    log.error("태그 찾기 실패: tagId={}", tagId);
                     return new CustomException(ErrorCode.TAG_NOT_FOUND);
                 });
 
         tagRepository.delete(tag);
 
-        log.info("✅태그 삭제 완료: tagId={}, name={}", tagId, tag.getName());
+        log.info("태그 삭제 완료: tagId={}, name={}", tagId, tag.getName());
     }
 
     /**
@@ -132,7 +132,7 @@ public class TagService {
 
         List<Tag> tags = tagRepository.findByNameContaining(keyword);
 
-        log.info("✅태그 검색 완료: keyword={}, resultCount={}", keyword, tags.size());
+        log.info("태그 검색 완료: keyword={}, resultCount={}", keyword, tags.size());
 
         return tags.stream()
                 .map(TagResponseDto::from)
