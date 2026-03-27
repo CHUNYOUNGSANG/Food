@@ -15,6 +15,9 @@ import project.food.domain.post.entity.Post;
 import project.food.domain.restaurant.entity.Restaurant;
 import project.food.global.config.JpaConfig;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -212,7 +215,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: testMember1의 게시글 조회
-            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId());
+            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId(), PageRequest.of(0, 100)).getContent();
 
             // Then: testMember1의 게시글 2개만 조회되어야 함
             assertThat(member1Posts).hasSize(2);
@@ -229,7 +232,7 @@ class PostRepositoryTest {
             // Given: testMember1이 게시글을 작성하지 않은 상태
 
             // When: testMember1의 게시글 조회
-            List<Post> posts = postRepository.findByMemberId(testMember1.getId());
+            List<Post> posts = postRepository.findByMemberId(testMember1.getId(), PageRequest.of(0, 100)).getContent();
 
             // Then: 빈 리스트 반환
             assertThat(posts).isEmpty();
@@ -246,8 +249,8 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: 각 회원의 게시글 조회
-            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId());
-            List<Post> member2Posts = postRepository.findByMemberId(testMember2.getId());
+            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId(), PageRequest.of(0, 100)).getContent();
+            List<Post> member2Posts = postRepository.findByMemberId(testMember2.getId(), PageRequest.of(0, 100)).getContent();
 
             // Then: 각자 2개씩 조회되어야 함
             assertThat(member1Posts).hasSize(2);
@@ -328,7 +331,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: "강남"이 포함된 게시글 검색
-            List<Post> posts = postRepository.findByTitleContaining("강남");
+            List<Post> posts = postRepository.findByTitleContaining("강남", PageRequest.of(0, 100)).getContent();
 
             // Then: "강남"이 포함된 게시글 3개 조회
             assertThat(posts).hasSize(3);
@@ -346,7 +349,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: 빈 문자열로 검색
-            List<Post> posts = postRepository.findByTitleContaining("");
+            List<Post> posts = postRepository.findByTitleContaining("", PageRequest.of(0, 100)).getContent();
 
             // Then: 모든 게시글 조회 (빈 문자열은 모두 문자열에 포함)
             assertThat(posts).hasSize(2);
@@ -362,7 +365,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: "Restaurant" 키워드로 검색
-            List<Post> searchResults = postRepository.findByTitleContaining("Restaurant");
+            List<Post> searchResults = postRepository.findByTitleContaining("Restaurant", PageRequest.of(0, 100)).getContent();
 
             // Then: "Restaurant"이 포함된 게시글 조회
             assertThat(searchResults).isNotEmpty();
@@ -380,7 +383,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: "맛집" 검색
-            List<Post> posts = postRepository.findByTitleContaining("맛집");
+            List<Post> posts = postRepository.findByTitleContaining("맛집", PageRequest.of(0, 100)).getContent();
 
             // Then: "맛집"이 포함된 모든 게시글 조회
             assertThat(posts).hasSize(3);
@@ -415,7 +418,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: 최신순으로 조회
-            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 100)).getContent();
 
             // Then: 가장 최신 게시글이 먼저 나와야 함
             assertThat(posts).hasSize(3);
@@ -430,7 +433,7 @@ class PostRepositoryTest {
             // Given: 게시글이 없는 상태
 
             // When: 최신순 조회
-            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 100)).getContent();
 
             // Then: 빈 리스트 반환
             assertThat(posts).isEmpty();
@@ -450,7 +453,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: 최신순 조회
-            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+            List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 100)).getContent();
 
             // Then: 3개 모두 조회 (순서는 DB가 결정)
             assertThat(posts).hasSize(3);
@@ -479,7 +482,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: "맛집" 검색 후 최신순 정렬
-            List<Post> searchResults = postRepository.findByTitleContaining("맛집");
+            List<Post> searchResults = postRepository.findByTitleContaining("맛집", PageRequest.of(0, 100)).getContent();
             List<Post> sortedResults = searchResults.stream()
                     .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
                     .toList();
@@ -526,7 +529,7 @@ class PostRepositoryTest {
             entityManager.flush();
 
             // When: 회원1의 게시글 중 testRestaurant 것만 필터링
-            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId());
+            List<Post> member1Posts = postRepository.findByMemberId(testMember1.getId(), PageRequest.of(0, 100)).getContent();
             List<Post> member1Restaurant1Posts = member1Posts.stream()
                     .filter(post -> testRestaurant.getId().equals(
                             post.getRestaurant() != null ? post.getRestaurant().getId() : null))
