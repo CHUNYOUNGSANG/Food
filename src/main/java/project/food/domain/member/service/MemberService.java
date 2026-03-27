@@ -5,20 +5,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import project.food.domain.comment.entity.Comment;
 import project.food.domain.comment.repository.CommentRepository;
 import project.food.domain.like.commentlike.repository.CommentLikeRepository;
 import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.domain.member.dto.*;
 import project.food.domain.member.entity.Member;
 import project.food.domain.member.repository.MemberRepository;
-import project.food.domain.post.entity.Post;
 import project.food.domain.post.repository.PostRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
-import project.food.global.file.service.FileStorageService;
+import project.food.global.file.service.FileStorage;
 import project.food.global.jwt.JwtTokenProvider;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class MemberService {
     private final CommentLikeRepository commentLikeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final FileStorageService fileStorage;
+    private final FileStorage fileStorage;
 
     /**
      * 회원가입
@@ -57,15 +58,13 @@ public class MemberService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
-        String profileImageUrl = null;
-        if (requestDto.getProfileImage() != null && !requestDto.getProfileImage().isEmpty()) {
-            UploadedFileInfo fileInfo = fileStorage.saveProfileImage(requestDto.getProfileImage());
-            profileImageUrl = fileInfo.getFileUrl();
-        }
-
-        // Entity 생성 시 URL 전달
-        Member member = requestDto.toEntity(encodedPassword, profileImageUrl);
+        Member member = requestDto.toEntity(encodedPassword, null);
         Member savedMember = memberRepository.save(member);
+
+        if (requestDto.getProfileImage() != null && !requestDto.getProfileImage().isEmpty()) {
+            UploadedFileInfo fileInfo = fileStorage.saveProfileImage(requestDto.getProfileImage(), savedMember.getId());
+            savedMember.updateProfile(savedMember.getName(), savedMember.getNickname(), fileInfo.getFileUrl());
+        }
 
         log.info("회원가입 완료: id = {}, email = {}", savedMember.getId(), savedMember.getEmail());
 
@@ -95,7 +94,7 @@ public class MemberService {
         // JWT 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(
                 member.getId(), member.getEmail(), member.getRole().getKey());
-        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getRole().getKey());
 
         log.info("로그인 성공: id = {}, email = {}", member.getId(), member.getEmail());
 
@@ -121,7 +120,7 @@ public class MemberService {
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getEmail(), member.getRole().getKey());
 
-        String refreshToken = jwtTokenProvider.createRefreshToken(memberId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(memberId, member.getRole().getKey());
 
         log.info("토큰 재발급 완료 : memberId = {}", memberId);
 
@@ -159,22 +158,29 @@ public class MemberService {
     /**
      * 전체 회원 조회
      */
-    public List<MemberResponseDto> getAllMembers() {
-        return memberRepository.findAll().stream()
-                .map(MemberResponseDto::from)
-                .toList();
+    public Page<MemberResponseDto> getAllMembers(Pageable pageable) {
+        return memberRepository.findAll(pageable)
+                .map(MemberResponseDto::from);
     }
 
     /**
      * 회원 정보 수정
      */
     @Transactional
-    public MemberResponseDto updateMember(Long id, MemberUpdateDto updateDto) {
+    public MemberResponseDto updateMember(Long id, Long requesterId, MemberUpdateDto updateDto) {
         log.info("회원 정보 수정: id = {}", id);
 
         // 회원 조회
         Member member = memberRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 본인 또는 관리자만 수정 가능
+        Member requester = memberRepository.findById(requesterId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
+        if (!id.equals(requesterId) && !requester.isAdmin()) {
+            log.warn("회원 정보 수정 권한 없음: targetId = {}, requesterId = {}", id, requesterId);
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
         // 닉네임 변경 시 중복 확인
         if (!member.getNickname().equals(updateDto.getNickname())) {
@@ -185,7 +191,7 @@ public class MemberService {
 
         String profileImageUrl = member.getProfileImage();
         if (updateDto.getProfileImage() != null && !updateDto.getProfileImage().isEmpty()) {
-            UploadedFileInfo fileInfo = fileStorage.saveProfileImage(updateDto.getProfileImage());
+            UploadedFileInfo fileInfo = fileStorage.saveProfileImage(updateDto.getProfileImage(), id);
             profileImageUrl = fileInfo.getFileUrl();
         }
 
@@ -207,8 +213,14 @@ public class MemberService {
      * 비밀번호 변경
      */
     @Transactional
-    public void updatePassword(Long id, String oldPassword, String newPassword) {
+    public void updatePassword(Long id, Long requesterId, String oldPassword, String newPassword) {
         log.info("비밀번호 변경: id = {}", id);
+
+        // 본인만 변경 가능
+        if (!id.equals(requesterId)) {
+            log.warn("비밀번호 변경 권한 없음: targetId = {}, requesterId = {}", id, requesterId);
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
 
         // 회원 조회
         Member member = memberRepository.findById(id)
@@ -254,20 +266,16 @@ public class MemberService {
         // 회원의 댓글에 다른 사람이 누른 좋아요 삭제
         commentLikeRepository.deleteByCommentMemberId(id);
 
-        // 회원 게시글의 댓글에 달린 좋아요 + 게시글 좋아요 삭제
-        List<Post> posts = postRepository.findByMemberId(id);
-        for  (Post post : posts) {
-            for (Comment comment : post.getComments()) {
-                commentLikeRepository.deleteByCommentId(comment.getId());
-            }
-            postLikeRepository.deleteByPostId(post.getId());
+        // 회원 게시글의 댓글 좋아요 + 게시글 좋아요 일괄 삭제
+        List<Long> postIds = postRepository.findIdsByMemberId(id);
+        if (!postIds.isEmpty()) {
+            commentLikeRepository.deleteByPostIdIn(postIds);
+            postLikeRepository.deleteByPostIdIn(postIds);
+            postRepository.deleteAllByIdInBatch(postIds);
         }
 
-        // 회원 게시글 삭제 (cascade: post_image, post_tag, comments 자동 삭제)
-        postRepository.deleteAll(posts);
-
         // 다른 게시글에 작성한 회원의 댓글 삭제
-        commentRepository.deleteById(id);
+        commentRepository.deleteByMemberId(id);
 
         // 회원 삭제
         memberRepository.deleteById(id);

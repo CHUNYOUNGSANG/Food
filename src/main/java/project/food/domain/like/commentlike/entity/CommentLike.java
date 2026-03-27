@@ -50,7 +50,7 @@ public class CommentLike extends BaseTimeEntity {
      * @param memberId
      * @return true: 본인의 좋아요, false: 타인의 좋아요
      */
-    public boolean inOwnedBy(Long memberId) {
+    public boolean isOwnedBy(Long memberId) {
         return this.member != null && this.member.getId().equals(memberId);
     }
 }

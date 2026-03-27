@@ -43,6 +43,7 @@ out/
 
 ### YAML ###
 .env
+.env.dev
 src/main/resources/application-secret.yml
 
 ### macOs ###

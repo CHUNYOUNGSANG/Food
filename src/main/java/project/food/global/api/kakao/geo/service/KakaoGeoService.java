@@ -63,7 +63,7 @@ public class KakaoGeoService {
             }
 
             long elapsed = System.currentTimeMillis() - startedAt;
-            log.info("✅ [KAKAO][GEO] 성공 address={} lat={} lng={} elapsedMs={}",
+            log.info("[KAKAO][GEO] 성공 address={} lat={} lng={} elapsedMs={}",
                     address, body.getLatitude(), body.getLongitude(), elapsed);
 
             return body;
@@ -77,7 +77,7 @@ public class KakaoGeoService {
 
         } catch (RestClientException e) {
             long elapsed = System.currentTimeMillis() - startedAt;
-            log.error("⚠️ [KAKAO][GEO] 호출 오류 address={} elapsedMs={} error={}",
+            log.error("[KAKAO][GEO] 호출 오류 address={} elapsedMs={} error={}",
                     address, elapsed, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_ERROR);
         }
@@ -87,17 +87,17 @@ public class KakaoGeoService {
         HttpStatusCode status = e.getStatusCode();
 
         if (status == HttpStatus.UNAUTHORIZED) {
-            log.error("❌ [KAKAO][GEO] 인증 실패 {}={} status={} msg={}",
+            log.error("[KAKAO][GEO] 인증 실패 {}={} status={} msg={}",
                     keyName, keyValue, status, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_UNAUTHORIZED);
         }
         if (status == HttpStatus.TOO_MANY_REQUESTS) {
-            log.error("❌ [KAKAO][GEO] 호출 한도 초과 {}={} status={} msg={}",
+            log.error("[KAKAO][GEO] 호출 한도 초과 {}={} status={} msg={}",
                     keyName, keyValue, status, e.getMessage());
             throw new CustomException(ErrorCode.KAKAO_API_RATE_LIMIT);
         }
 
-        log.error("❌ [KAKAO][GEO] HTTP 오류 {}={} status={} msg={}",
+        log.error("[KAKAO][GEO] HTTP 오류 {}={} status={} msg={}",
                 keyName, keyValue, status, e.getMessage());
     }
 }

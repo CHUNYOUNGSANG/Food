@@ -2,6 +2,8 @@ package project.food.domain.post.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,10 +21,11 @@ import project.food.domain.restaurant.repository.RestaurantRepository;
 import project.food.domain.tag.entity.PostTag;
 import project.food.domain.tag.entity.Tag;
 import project.food.domain.tag.repository.TagRepository;
+import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
-import project.food.global.file.service.FileStorageService;
+import project.food.global.file.service.FileStorage;
 
 import java.util.HashSet;
 import java.util.List;
@@ -42,9 +45,10 @@ public class PostService {
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final PostImageRepository postImageRepository;
-    private final FileStorageService fileStorageService;
+    private final FileStorage fileStorageService;
     private final RestaurantRepository restaurantRepository;
     private final TagRepository tagRepository;
+    private final PostLikeRepository postLikeRepository;
 
     /**
      * 게시글 생성
@@ -59,7 +63,7 @@ public class PostService {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> {
-                    log.error("❌ 회원 찾기 실패: memberId={}", memberId);
+                    log.error("회원 찾기 실패: memberId={}", memberId);
                     return new CustomException(ErrorCode.MEMBER_NOT_FOUND);
                 });
 
@@ -69,7 +73,7 @@ public class PostService {
             // 기존 맛집 ID로 연결
             restaurant = restaurantRepository.findById(request.getRestaurantId())
                     .orElseThrow(() -> {
-                        log.error("❌ 음식점 찾기 실패: restaurantId={}", request.getRestaurantId());
+                        log.error("음식점 찾기 실패: restaurantId={}", request.getRestaurantId());
                         return new CustomException(ErrorCode.RESTAURANT_NOT_FOUND);
                     });
         } else if (request.getPlaceId() != null) {
@@ -114,7 +118,7 @@ public class PostService {
             savePostTags(savedPost, request.getTagNames());
         }
 
-        log.info("✅ 게시글 생성 완료: postId={}, memberId={}, title={}, imageCount={}, tagCount={}",
+        log.info("게시글 생성 완료: postId={}, memberId={}, title={}, imageCount={}, tagCount={}",
                 savedPost.getId(), memberId, savedPost.getTitle(),
                 savedPost.getImages().size(), savedPost.getPostTags().size());
 
@@ -125,17 +129,16 @@ public class PostService {
      * 게시글 전체 목록 조회 (최신순)
      * @return 게시글 목록
      */
-    public List<PostResponseDto> getAllPosts() {
+    public Page<PostResponseDto> getAllPosts(Pageable pageable) {
 
         log.debug("게시글 전체 목록 조회 시작");
 
-        List<Post> posts = postRepository.findAllByOrderByCreatedAtDesc();
+        Page<PostResponseDto> posts = postRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(PostResponseDto::from);
 
-        log.info("✅ 게시글 전체 목록 조회 완료: totalCount={}", posts.size());
+        log.info("게시글 전체 목록 조회 완료: totalCount={}", posts.getTotalElements());
 
-        return posts.stream()
-                .map(PostResponseDto::from)
-                .collect(Collectors.toList());
+        return posts;
     }
 
     /**
@@ -149,9 +152,9 @@ public class PostService {
 
         log.debug("게시글 상세 조회 시작: postId={}", postId);
 
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findWithDetailsById(postId)
                 .orElseThrow(() -> {
-                    log.error("❌ 게시글 찾기 실패: postId={}", postId);
+                    log.error("게시글 찾기 실패: postId={}", postId);
                     return new CustomException(ErrorCode.POST_NOT_FOUND);
                 });
 
@@ -161,7 +164,7 @@ public class PostService {
         log.debug("조회수 증가: postId={}, {} → {}",
                 postId, beforeViewCount, post.getViewCount());
 
-        log.info("✅ 게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
+        log.info("게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
                 postId, post.getTitle(), post.getViewCount());
 
         return PostResponseDto.from(post);
@@ -181,12 +184,12 @@ public class PostService {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> {
-                    log.error("❌ 게시글 찾기 실패: postId={}", postId);
+                    log.error("게시글 찾기 실패: postId={}", postId);
                     return new CustomException(ErrorCode.POST_NOT_FOUND);
                 });
 
         if (!post.isWriter(memberId)) {
-            log.warn("⚠️ 게시글 수정 권한 없음: postId={}, requestMemberId={}, writerMemberId={}",
+            log.warn("게시글 수정 권한 없음: postId={}, requestMemberId={}, writerMemberId={}",
                     postId, memberId, post.getMember().getId());
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
         }
@@ -205,7 +208,7 @@ public class PostService {
             if (!Objects.equals(currentRestaurantId, request.getRestaurantId())) {
                 Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
                         .orElseThrow(() -> {
-                            log.error("❌ 음식점 찾기 실패: restaurantId={}", request.getRestaurantId());
+                            log.error("음식점 찾기 실패: restaurantId={}", request.getRestaurantId());
                             return new CustomException(ErrorCode.RESTAURANT_NOT_FOUND);
                         });
                 post.assignRestaurant(restaurant);
@@ -268,7 +271,7 @@ public class PostService {
             }
         }
 
-        log.info("✅ 게시글 수정 완료: postId={}, memberId={}, currentImageCount={}, tagCount={}",
+        log.info("게시글 수정 완료: postId={}, memberId={}, currentImageCount={}, tagCount={}",
                 postId, memberId, post.getImages().size(), post.getPostTags().size());
 
         return PostResponseDto.from(post);
@@ -287,7 +290,7 @@ public class PostService {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> {
-                    log.error("❌ 게시글 찾기 실패: postId={}", postId);
+                    log.error("게시글 찾기 실패: postId={}", postId);
                     return new CustomException(ErrorCode.POST_NOT_FOUND);
                 });
 
@@ -295,7 +298,7 @@ public class PostService {
                 .orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         if (!post.isWriter(memberId) && !requester.isAdmin()) {
-            log.warn("⚠️ 게시글 삭제 권한 없음: postId={}, requestMemberId={}, writerMemberId={}",
+            log.warn("게시글 삭제 권한 없음: postId={}, requestMemberId={}, writerMemberId={}",
                     postId, memberId, post.getMember().getId());
             throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
         }
@@ -311,9 +314,11 @@ public class PostService {
             log.debug("게시글 이미지 파일 삭제 완료: postId={}", postId);
         }
 
+        postLikeRepository.deleteByPostId(postId);
+
         postRepository.delete(post);
 
-        log.info("✅ 게시글 삭제 완료: postId={}, memberId={}, deletedImages={}",
+        log.info("게시글 삭제 완료: postId={}, memberId={}, deletedImages={}",
                 postId, memberId, filePaths.size());
     }
 
@@ -322,18 +327,17 @@ public class PostService {
      * @param memberId 회원 ID
      * @return 해당 회원의 게시글 목록
      */
-    public List<PostResponseDto> getPostsByMember(Long memberId) {
+    public Page<PostResponseDto> getPostsByMember(Long memberId, Pageable pageable) {
 
         log.debug("회원 게시글 목록 조회 시작: memberId={}", memberId);
 
-        List<Post> posts = postRepository.findByMemberId(memberId);
+        Page<PostResponseDto> posts = postRepository.findByMemberId(memberId, pageable)
+                .map(PostResponseDto::from);
 
-        log.info("✅ 회원 게시글 목록 조회 완료: memberId={}, postCount={}",
-                memberId, posts.size());
+        log.info("회원 게시글 목록 조회 완료: memberId={}, postCount={}",
+                memberId, posts.getTotalElements());
 
-        return posts.stream()
-                .map(PostResponseDto::from)
-                .collect(Collectors.toList());
+        return posts;
     }
 
     /**
@@ -341,18 +345,17 @@ public class PostService {
      * @param keyword 검색 키워드
      * @return 검색 결과 게시글 목록
      */
-    public List<PostResponseDto> searchPosts(String keyword) {
+    public Page<PostResponseDto> searchPosts(String keyword, Pageable pageable) {
 
         log.debug("게시글 검색 시작: keyword={}", keyword);
 
-        List<Post> posts = postRepository.findByTitleContaining(keyword);
+        Page<PostResponseDto> posts = postRepository.findByTitleContaining(keyword, pageable)
+                .map(PostResponseDto::from);
 
-        log.info("✅ 게시글 검색 완료: keyword={}, resultCount={}",
-                keyword, posts.size());
+        log.info("게시글 검색 완료: keyword={}, resultCount={}",
+                keyword, posts.getTotalElements());
 
-        return posts.stream()
-                .map(PostResponseDto::from)
-                .collect(Collectors.toList());
+        return posts;
     }
 
     /**
@@ -380,7 +383,7 @@ public class PostService {
             post.addPostTag(postTag);
         }
 
-        log.info("✅ 태그 저장 완료: postId={}, tagCount={}", post.getId(), distinctTagNames.size());
+        log.info("태그 저장 완료: postId={}, tagCount={}", post.getId(), distinctTagNames.size());
     }
 
     /**
@@ -394,7 +397,7 @@ public class PostService {
                 post.getId(), imageFiles.size());
 
         // 파일 저장
-        List<UploadedFileInfo> uploadedFiles = fileStorageService.storeFiles(imageFiles);
+        List<UploadedFileInfo> uploadedFiles = fileStorageService.storeFiles(imageFiles, post.getMember().getId());
 
         log.debug("파일 스토리지 저장 완료: postId={}, savedCount={}",
                 post.getId(), uploadedFiles.size());
@@ -421,7 +424,7 @@ public class PostService {
                     postImage.getId(), fileInfo.getOriginalFileName(), fileInfo.getFileSize());
         }
 
-        log.info("✅ 이미지 저장 완료: postId={}, savedImageCount={}, totalImageCount={}",
+        log.info("이미지 저장 완료: postId={}, savedImageCount={}, totalImageCount={}",
                 post.getId(), savedCount, post.getImages().size());
     }
 
@@ -439,13 +442,13 @@ public class PostService {
         for (Long imageId : imageIds) {
             PostImage postImage = postImageRepository.findById(imageId)
                     .orElseThrow(() -> {
-                        log.error("❌ 이미지 찾기 실패: imageId={}", imageId);
+                        log.error("이미지 찾기 실패: imageId={}", imageId);
                         return new CustomException(ErrorCode.FILE_NOT_FOUND);
                     });
 
             // 게시글 소유 확인
             if (!postImage.getPost().getId().equals(post.getId())) {
-                log.warn("⚠️ 이미지가 다른 게시글에 속함: imageId={}, requestPostId={}, actualPostId={}",
+                log.warn("이미지가 다른 게시글에 속함: imageId={}, requestPostId={}, actualPostId={}",
                         imageId, post.getId(), postImage.getPost().getId());
                 throw new CustomException(ErrorCode.POST_ACCESS_DENIED);
             }
@@ -465,7 +468,7 @@ public class PostService {
                     imageId, postImage.getOriginalFileName());
         }
 
-        log.info("✅ 이미지 삭제 완료: postId={}, deletedCount={}, remainingCount={}",
+        log.info("이미지 삭제 완료: postId={}, deletedCount={}, remainingCount={}",
                 post.getId(), deletedCount, post.getImages().size());
     }
 }

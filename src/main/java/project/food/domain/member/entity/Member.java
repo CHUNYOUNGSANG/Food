@@ -34,8 +34,7 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
-    @Lob
-    @Column(name = "profile_image", columnDefinition = "LONGTEXT")
+    @Column(name = "profile_image")
     private String profileImage;
 
     @Enumerated(EnumType.STRING)

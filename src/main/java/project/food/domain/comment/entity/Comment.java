@@ -15,7 +15,7 @@ import project.food.global.common.BaseTimeEntity;
  * 기능:
  * - 게시글에 대한 작성
  * - 댓글에 대댓글 작성
- * - 댓글 수정/삭제 (작성자 권환)
+ * - 댓글 수정/삭제 (작성자 권한)
  *
  * 연관간계:
  * - Member (N:1) - 작성자
@@ -25,7 +25,11 @@ import project.food.global.common.BaseTimeEntity;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "comments")
+@Table(name = "comments", indexes = {
+        @Index(name = "idx_comment_post_id",    columnList = "post_id"),
+        @Index(name = "idx_comment_member_id",  columnList = "member_id"),
+        @Index(name = "idx_comment_parent_id",  columnList = "parent_comment_id")
+})
 public class Comment extends BaseTimeEntity {
 
     @Id
@@ -59,7 +63,7 @@ public class Comment extends BaseTimeEntity {
      * - true: 논리 삭제된 댓글
      */
     @Column(nullable = false)
-    private boolean deleted =false;
+    private boolean deleted = false;
 
     @Builder
     public Comment(Post post, Member member, String content, Long parentCommentId) {

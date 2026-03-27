@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -92,9 +94,10 @@ public class MemberController {
             @ApiResponse(responseCode = "403", description = "접근 권한 없음 (관리자만 접근 가능)")
     })
     @GetMapping
-    public ResponseEntity<List<MemberResponseDto>> getAllMembers() {
-        List<MemberResponseDto> members = memberService.getAllMembers();
-        return ResponseEntity.ok(members);
+    public ResponseEntity<Page<MemberResponseDto>> getAllMembers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(memberService.getAllMembers(PageRequest.of(page, size)));
     }
 
     /**
@@ -128,8 +131,9 @@ public class MemberController {
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MemberResponseDto> updateMember(
             @PathVariable Long id,
+            @AuthenticationPrincipal Long requesterId,
             @Valid @ModelAttribute MemberUpdateDto updateDto) {
-        MemberResponseDto responseDto = memberService.updateMember(id, updateDto);
+        MemberResponseDto responseDto = memberService.updateMember(id, requesterId, updateDto);
         return ResponseEntity.ok(responseDto);
     }
 
@@ -148,8 +152,9 @@ public class MemberController {
     @PutMapping("/{id}/password")
     public ResponseEntity<Void> updatePassword(
             @PathVariable Long id,
+            @AuthenticationPrincipal Long requesterId,
             @Valid @RequestBody PasswordChangeRequestDto requestDto) {
-        memberService.updatePassword(id, requestDto.getOldPassword(), requestDto.getNewPassword());
+        memberService.updatePassword(id, requesterId, requestDto.getOldPassword(), requestDto.getNewPassword());
         return ResponseEntity.ok().build();
     }
 

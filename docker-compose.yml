@@ -3,7 +3,7 @@ services:
     build: .
     container_name: food-app
     ports:
-      - "8081:8080"
+      - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:mysql://food-db.c3s0okm64zbr.ap-northeast-2.rds.amazonaws.com:3306/food?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
@@ -11,11 +11,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       KAKAO_API_KEY: ${KAKAO_API_KEY}
+      SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY: ${AWS_SECRET_KEY}
+      SPRING_CLOUD_AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      SPRING_CLOUD_AWS_REGION_STATIC: ${AWS_REGION}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
-      - uploads:/app/uploads
       - logs:/app/logs
     restart: always
 
 volumes:
-  uploads:
   logs:

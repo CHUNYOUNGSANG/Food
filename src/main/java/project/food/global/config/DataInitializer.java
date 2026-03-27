@@ -27,7 +27,7 @@ public class DataInitializer {
     private String adminPassword;
 
     @Bean
-    @Profile({"dev", "local"})
+    @Profile({"dev", "prod"})
     public CommandLineRunner initData() {
         return args -> {
             log.info("============================");
@@ -68,7 +68,6 @@ public class DataInitializer {
 
         log.info("관리자 계정 생성 완료");
         log.info(" - 이메일: {}", adminEmail);
-        log.info(" - 암호화된 비밀번호: {}", encodedPassword);
         log.info(" - 권한: ADMIN");
     }
 }

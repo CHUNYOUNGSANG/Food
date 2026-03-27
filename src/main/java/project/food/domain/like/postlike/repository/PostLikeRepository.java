@@ -64,4 +64,12 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
      * @param postId
      */
     void deleteByPostId(Long postId);
+
+    /**
+     * 여러 게시글의 좋아요 일괄 삭제 (회원 탈퇴 시 사용)
+     * @param postIds 게시글 ID 목록
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM PostLike pl WHERE pl.post.id IN :postIds")
+    void deleteByPostIdIn(@Param("postIds") List<Long> postIds);
 }

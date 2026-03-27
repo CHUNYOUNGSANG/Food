@@ -51,7 +51,7 @@ public class TagController {
 
         TagResponseDto response = tagService.createTag(request);
 
-        log.info("✅태그 생성 완료: tagId={}", response.getId());
+        log.info("태그 생성 완료: tagId={}", response.getId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
@@ -71,7 +71,7 @@ public class TagController {
 
         List<TagResponseDto> tags = tagService.getAllTags();
 
-        log.info("✅태그 전체 목록 조회 완료: tagCount={}", tags.size());
+        log.info("태그 전체 목록 조회 완료: tagCount={}", tags.size());
 
         return ResponseEntity.ok(tags);
     }
@@ -97,7 +97,7 @@ public class TagController {
         TagResponseDto response =
                 tagService.getTag(tagId);
 
-        log.info("✅태그 조회 완료: tagId={}, name={}",
+        log.info("태그 조회 완료: tagId={}, name={}",
                 tagId, response.getName());
 
         return ResponseEntity.ok(response);
@@ -126,7 +126,7 @@ public class TagController {
 
         TagResponseDto response = tagService.updateTag(tagId, request);
 
-        log.info("✅태그 수정 완료: tagId={}", tagId);
+        log.info("태그 수정 완료: tagId={}", tagId);
 
         return ResponseEntity.ok(response);
 
@@ -152,7 +152,7 @@ public class TagController {
 
         tagService.deleteTag(tagId);
 
-        log.info("✅ 태그 삭제 완료: tagId={}", tagId);
+        log.info("태그 삭제 완료: tagId={}", tagId);
 
         return ResponseEntity.noContent().build();
 
@@ -176,7 +176,7 @@ public class TagController {
 
         List<TagResponseDto> tags = tagService.searchTags(keyword);
 
-        log.info("✅ 태그 검색 완료: keyword={}, resultCount={}", keyword, tags.size());
+        log.info("태그 검색 완료: keyword={}, resultCount={}", keyword, tags.size());
 
         return ResponseEntity.ok(tags);
 
