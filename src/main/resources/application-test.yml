@@ -29,8 +29,8 @@ server:
     include-binding-errors: always
 
 admin:
-  email: admin@test.com
-  password: test1234!
+  email:
+  password:
 
 
 logging:
