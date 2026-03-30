@@ -112,6 +112,22 @@ public class LocalFileStorage implements FileStorage {
         });
     }
 
+    @Override
+    public String saveRestaurantImage(byte[] imageBytes, String fileName) {
+        try {
+            String storedFileName = UUID.randomUUID() + "_" + fileName;
+            Path dirPath = Paths.get(BASE_DIR, "restaurant");
+            Files.createDirectories(dirPath);
+            Path filePath = dirPath.resolve(storedFileName);
+            Files.write(filePath, imageBytes);
+            log.info("맛집 이미지 로컬 저장: {}", filePath);
+            return BASE_URL + "/restaurant/" + storedFileName;
+        } catch (IOException e) {
+            log.error("맛집 이미지 로컬 저장 실패: {}", fileName);
+            throw new FileUploadException(ErrorCode.FILE_UPLOAD_FAILED, "맛집 이미지 저장 실패: " + fileName);
+        }
+    }
+
     private void validateFile(MultipartFile file) {
         if (file.isEmpty()) throw new FileUploadException(ErrorCode.EMPTY_FILE);
 

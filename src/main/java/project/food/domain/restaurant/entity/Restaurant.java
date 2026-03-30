@@ -57,4 +57,12 @@ public class Restaurant extends BaseTimeEntity {
     // 카카오 플레이스 URL
     @Column(name = "place_url", length = 500)
     private String placeUrl;
+
+    // 네이버 검색으로 가져온 대표 이미지 S3 URL
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 }

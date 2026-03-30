@@ -77,4 +77,6 @@ jobs:
               -e ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }} \
               -e SPRING_CLOUD_AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }} \
               -e CORS_ALLOWED_ORIGINS="${{ secrets.CORS_ALLOWED_ORIGINS }}" \
+              -e NAVER_API_CLIENT_ID=${{ secrets.NAVER_API_CLIENT_ID }} \
+              -e NAVER_API_CLIENT_SECRET=${{ secrets.NAVER_API_CLIENT_SECRET }} \
               ${{ secrets.ECR_REPOSITORY }}:latest

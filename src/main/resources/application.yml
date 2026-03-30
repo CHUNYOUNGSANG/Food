@@ -41,6 +41,11 @@ management:
     health:
       show-details: when-authorized
 
+naver:
+  api:
+    client-id: ${naver.api.client-id}
+    client-secret: ${naver.api.client-secret}
+
 jwt:
   secret: ${jwt.secret}
   access-token-expiration: 1800000
