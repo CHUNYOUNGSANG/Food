@@ -21,6 +21,7 @@ import project.food.domain.restaurant.repository.RestaurantRepository;
 import project.food.domain.tag.entity.PostTag;
 import project.food.domain.tag.entity.Tag;
 import project.food.domain.tag.repository.TagRepository;
+import project.food.domain.like.commentlike.repository.CommentLikeRepository;
 import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
@@ -49,6 +50,7 @@ public class PostService {
     private final RestaurantRepository restaurantRepository;
     private final TagRepository tagRepository;
     private final PostLikeRepository postLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     /**
      * 게시글 생성
@@ -314,9 +316,10 @@ public class PostService {
             log.debug("게시글 이미지 파일 삭제 완료: postId={}", postId);
         }
 
-        postLikeRepository.deleteByPostId(postId);
+        commentLikeRepository.deleteByPostId(postId);  // 댓글 좋아요 먼저 삭제
+        postLikeRepository.deleteByPostId(postId);      // 게시글 좋아요 삭제
 
-        postRepository.delete(post);
+        postRepository.delete(post);  // 게시글 삭제 (댓글 cascade 삭제)
 
         log.info("게시글 삭제 완료: postId={}, memberId={}, deletedImages={}",
                 postId, memberId, filePaths.size());
