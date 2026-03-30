@@ -63,8 +63,8 @@ public class NaverSearchService {
                 return null;
             }
 
-            // thumbnail: 작은 미리보기 / link: 원본 이미지
-            String imageUrl = (String) items.get(0).get("thumbnail");
+            // link: 원본 이미지 URL (thumbnail은 search.pstatic.net 프록시라 서버 요청 차단됨)
+            String imageUrl = (String) items.get(0).get("link");
             if (imageUrl == null) return null;
 
             log.debug("[NAVER][IMAGE] 이미지 URL 획득: query={}, url={}", restaurantName, imageUrl);
@@ -79,11 +79,15 @@ public class NaverSearchService {
     }
 
     /**
-     * 이미지 URL로 byte[] 다운로드
+     * 이미지 URL로 byte[] 다운로드 (User-Agent 헤더 추가로 봇 차단 우회)
      */
     private byte[] downloadImage(String imageUrl) {
         try {
-            ResponseEntity<byte[]> response = restTemplate.getForEntity(imageUrl, byte[].class);
+            HttpHeaders downloadHeaders = new HttpHeaders();
+            downloadHeaders.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            HttpEntity<Void> downloadEntity = new HttpEntity<>(downloadHeaders);
+
+            ResponseEntity<byte[]> response = restTemplate.exchange(imageUrl, HttpMethod.GET, downloadEntity, byte[].class);
             log.debug("[NAVER][IMAGE] 이미지 다운로드 완료: size={} bytes",
                     response.getBody() != null ? response.getBody().length : 0);
             return response.getBody();
