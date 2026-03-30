@@ -2,7 +2,10 @@ package project.food.domain.restaurant.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
+import project.food.global.common.CachedPage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.food.domain.post.repository.PostRepository;
@@ -45,15 +48,17 @@ public class RestaurantService {
      * @param size 페이지 크기
      * @return 맛집 목록 (간략 정보)
      */
-    public Page<RestaurantListItemResponse> search(String q, int page, int size) {
+    @Cacheable(value = "restaurants", key = "(#q ?: 'all') + '-' + #page + '-' + #size")
+    public CachedPage<RestaurantListItemResponse> search(String q, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
 
         // 검색어가 없으면 전체 조회, 있으면 이름/주소/카테고리 통합 검색
-        Page<Restaurant> result = (q == null || q.isBlank())
+        Page<RestaurantListItemResponse> result = ((q == null || q.isBlank())
                 ? restaurantRepository.findAll(pageable)
-                : restaurantRepository.search(q, pageable);
+                : restaurantRepository.search(q, pageable))
+                .map(RestaurantListItemResponse::from);
 
-        return result.map(RestaurantListItemResponse::from);
+        return new CachedPage<>(result.getContent(), page, size, result.getTotalElements());
     }
 
     /**
@@ -63,6 +68,7 @@ public class RestaurantService {
      * @param restaurantId 맛집 ID
      * @return 맛집 상세 정보 (리뷰 포함)
      */
+    @Cacheable(value = "restaurant", key = "#restaurantId")
     public RestaurantDetailResponse getDetail(Long restaurantId) {
         // 맛집 조회
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
@@ -105,6 +111,7 @@ public class RestaurantService {
      * @param size   한 페이지 크기
      * @return cursor 페이지 응답
      */
+    @Cacheable(value = "restaurants-recommended", key = "(#cursor ?: 'first') + '-' + #size")
     public CursorPageResponse<RestaurantRankResponse> getRecommended(String cursor, int size) {
         List<Object[]> rows;
 
@@ -150,6 +157,7 @@ public class RestaurantService {
      * @param size   한 페이지 크기
      * @return cursor 페이지 응답
      */
+    @Cacheable(value = "restaurants-popular", key = "(#cursor ?: 'first') + '-' + #size")
     public CursorPageResponse<RestaurantRankResponse> getPopular(String cursor, int size) {
         List<Object[]> rows;
 

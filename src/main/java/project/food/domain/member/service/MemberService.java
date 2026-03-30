@@ -17,6 +17,7 @@ import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
 import project.food.global.file.service.FileStorage;
 import project.food.global.jwt.JwtTokenProvider;
+import project.food.global.jwt.RefreshTokenService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +37,7 @@ public class MemberService {
     private final CommentLikeRepository commentLikeRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
     private final FileStorage fileStorage;
 
     /**
@@ -96,6 +98,9 @@ public class MemberService {
                 member.getId(), member.getEmail(), member.getRole().getKey());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId(), member.getRole().getKey());
 
+        // Redis에 Refresh Token 저장 (TTL = 7일)
+        refreshTokenService.save(member.getId(), refreshToken);
+
         log.info("로그인 성공: id = {}, email = {}", member.getId(), member.getEmail());
 
         return LoginResponseDto.builder()
@@ -116,11 +121,19 @@ public class MemberService {
         }
         Long memberId = jwtTokenProvider.getMemberIdFromToken(requestDto.getRefreshToken());
 
+        // Redis에 저장된 토큰과 일치하는지 검증 (탈취된 토큰 방어)
+        if (!refreshTokenService.isValid(memberId, requestDto.getRefreshToken())) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new CustomException(ErrorCode.MEMBER_NOT_FOUND));
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getId(), member.getEmail(), member.getRole().getKey());
 
         String refreshToken = jwtTokenProvider.createRefreshToken(memberId, member.getRole().getKey());
+
+        // 새 Refresh Token으로 Redis 갱신
+        refreshTokenService.save(memberId, refreshToken);
 
         log.info("토큰 재발급 완료 : memberId = {}", memberId);
 
@@ -129,6 +142,15 @@ public class MemberService {
                 .refreshToken(refreshToken)
                 .member(MemberResponseDto.from(member))
                 .build();
+    }
+
+    /**
+     * 로그아웃 - Redis에서 Refresh Token 삭제
+     */
+    @Transactional
+    public void logout(Long memberId) {
+        refreshTokenService.delete(memberId);
+        log.info("로그아웃 완료: memberId = {}", memberId);
     }
 
     /**

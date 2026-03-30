@@ -14,6 +14,7 @@ import project.food.domain.like.postlike.entity.PostLike;
 import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
+import project.food.global.redis.PostCountService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final MemberRepository memberRepository;
     private final PostRepository postRepository;
+    private final PostCountService postCountService;
 
     /**
      * 좋아요 추가
@@ -58,7 +60,8 @@ public class PostLikeService {
                 .build();
 
         PostLike savedLike = postLikeRepository.save(postLike);
-        
+        postCountService.incrementLikeCount(postId);  // Redis 카운터 증가
+
         log.info("좋아요 추가 완료: likeId = {}", savedLike.getId());
 
         return PostLikeResponseDto.simple(savedLike);
@@ -79,6 +82,7 @@ public class PostLikeService {
 
         // 좋아요 삭제
         postLikeRepository.delete(postLike);
+        postCountService.decrementLikeCount(postId);  // Redis 카운터 감소
 
         log.info("좋아요 취소 완료: likeId = {}", postLike.getId());
     }
@@ -120,8 +124,9 @@ public class PostLikeService {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
 
-        // 좋아요 개수 조회
-        Long likeCount = postLikeRepository.countByPostId(postId);
+        // 좋아요 개수 조회 (Redis 우선, 없으면 DB에서 로드 후 Redis 초기화)
+        long dbLikeCount = postLikeRepository.countByPostId(postId);
+        Long likeCount = postCountService.getLikeCount(postId, dbLikeCount);
 
         // 사용자의 좋아요 여부 확인
         Boolean isLiked = false;

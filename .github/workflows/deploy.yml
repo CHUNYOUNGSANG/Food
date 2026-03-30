@@ -79,4 +79,6 @@ jobs:
               -e CORS_ALLOWED_ORIGINS="${{ secrets.CORS_ALLOWED_ORIGINS }}" \
               -e NAVER_API_CLIENT_ID=${{ secrets.NAVER_API_CLIENT_ID }} \
               -e NAVER_API_CLIENT_SECRET=${{ secrets.NAVER_API_CLIENT_SECRET }} \
+              -e REDIS_HOST=localhost \
+              --network host \
               ${{ secrets.ECR_REPOSITORY }}:latest

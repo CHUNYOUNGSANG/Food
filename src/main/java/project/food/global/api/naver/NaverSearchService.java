@@ -28,8 +28,13 @@ public class NaverSearchService {
 
     private final RestTemplate restTemplate;
 
+    // Cloudflare 등 봇 차단이 강한 도메인 - 다운로드 시도 제외
+    private static final List<String> BLOCKED_DOMAINS = List.of(
+            "i.namu.wiki", "namu.wiki", "cloudflare"
+    );
+
     /**
-     * 음식점 이름으로 네이버 이미지 검색 후 첫 번째 이미지 byte[] 반환
+     * 음식점 이름으로 네이버 이미지 검색 후 다운로드 가능한 첫 이미지 byte[] 반환
      * 이미지가 없거나 실패하면 null 반환 (실패해도 맛집 저장은 계속 진행)
      */
     public byte[] searchRestaurantImage(String restaurantName) {
@@ -39,7 +44,7 @@ public class NaverSearchService {
             URI uri = UriComponentsBuilder
                     .fromHttpUrl(NAVER_IMAGE_SEARCH_URL)
                     .queryParam("query", restaurantName)
-                    .queryParam("display", 1)   // 첫 번째 이미지만
+                    .queryParam("display", 5)   // 여러 개 받아서 순차 시도
                     .queryParam("sort", "sim")  // 유사도순
                     .encode(StandardCharsets.UTF_8)
                     .build()
@@ -63,14 +68,18 @@ public class NaverSearchService {
                 return null;
             }
 
-            // link: 원본 이미지 URL (thumbnail은 search.pstatic.net 프록시라 서버 요청 차단됨)
-            String imageUrl = (String) items.get(0).get("link");
-            if (imageUrl == null) return null;
+            // 차단된 도메인은 스킵하고 다운로드 가능한 URL 순차 시도
+            for (Map item : items) {
+                String imageUrl = (String) item.get("link");
+                if (imageUrl == null) continue;
+                if (BLOCKED_DOMAINS.stream().anyMatch(imageUrl::contains)) continue;
 
-            log.debug("[NAVER][IMAGE] 이미지 URL 획득: query={}, url={}", restaurantName, imageUrl);
+                byte[] imageBytes = downloadImage(imageUrl);
+                if (imageBytes != null) return imageBytes;
+            }
 
-            // 이미지 다운로드
-            return downloadImage(imageUrl);
+            log.warn("[NAVER][IMAGE] 다운로드 가능한 이미지 없음: query={}", restaurantName);
+            return null;
 
         } catch (Exception e) {
             log.warn("[NAVER][IMAGE] 이미지 검색 실패 (스킵): query={}, error={}", restaurantName, e.getMessage());

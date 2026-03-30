@@ -90,6 +90,25 @@ public class PostResponseDto {
                 .build();
     }
 
+    /** Redis 조회수로 덮어쓴 새 DTO 반환 */
+    public PostResponseDto withViewCount(int viewCount) {
+        return PostResponseDto.builder()
+                .id(this.id)
+                .memberId(this.memberId)
+                .memberNickname(this.memberNickname)
+                .title(this.title)
+                .content(this.content)
+                .rating(this.rating)
+                .ratingText(this.ratingText)
+                .viewCount(viewCount)
+                .images(this.images)
+                .tags(this.tags)
+                .restaurant(this.restaurant)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .build();
+    }
+
     @Schema(description = "이미지 정보")
     @Getter
     @NoArgsConstructor
