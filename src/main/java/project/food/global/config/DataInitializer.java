@@ -83,6 +83,7 @@ public class DataInitializer {
         log.info("관리자 계정 생성 완료");
         log.info(" - 이메일: {}", adminEmail);
         log.info(" - 권한: ADMIN");
+
     }
 
     /**
