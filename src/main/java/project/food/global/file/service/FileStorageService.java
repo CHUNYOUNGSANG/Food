@@ -121,6 +121,28 @@ public class FileStorageService implements FileStorage {
     }
 
     /**
+     * byte[] 이미지를 S3 restaurant/ 경로에 저장 후 URL 반환
+     * 네이버에서 다운로드한 이미지 저장에 사용
+     */
+    @Override
+    public String saveRestaurantImage(byte[] imageBytes, String fileName) {
+        String s3Key = "restaurant/" + UUID.randomUUID() + "_" + fileName;
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(s3Key)
+                    .contentType("image/jpeg")
+                    .contentLength((long) imageBytes.length)
+                    .build();
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes));
+            return "https://" + bucket + ".s3." + region + ".amazonaws.com/" + s3Key;
+        } catch (Exception e) {
+            log.error("맛집 이미지 S3 저장 실패: fileName={}, error={}", fileName, e.getMessage());
+            throw new FileUploadException(ErrorCode.FILE_UPLOAD_FAILED, "맛집 이미지 저장 실패: " + fileName);
+        }
+    }
+
+    /**
      * 파일 삭제 (S3 key 또는 전체 S3 URL 전달)
      */
     public void deleteFile(String s3KeyOrUrl) {

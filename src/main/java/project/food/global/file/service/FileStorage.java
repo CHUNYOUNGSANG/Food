@@ -11,4 +11,6 @@ public interface FileStorage {
     List<UploadedFileInfo> storeFiles(List<MultipartFile> files, Long memberId);
     void deleteFile(String path);
     void deleteFiles(List<String> paths);
+    // 네이버에서 다운로드한 이미지(byte[])를 저장 후 URL 반환
+    String saveRestaurantImage(byte[] imageBytes, String fileName);
 }
