@@ -22,7 +22,9 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Gradle
-        run: ./gradlew build
+        run: |
+          ./gradlew build
+          cp build/libs/*-SNAPSHOT.jar app.jar
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
