@@ -84,6 +84,18 @@ public class MemberController {
     }
 
     /**
+     * 로그아웃
+     * POST /api/members/logout
+     */
+    @Operation(summary = "로그아웃", description = "Refresh Token을 무효화합니다.")
+    @ApiResponse(responseCode = "204", description = "로그아웃 성공")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal Long memberId) {
+        memberService.logout(memberId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * 전체 회원 목록 조회 (관리자 전용)
      * GET /api/members
      */

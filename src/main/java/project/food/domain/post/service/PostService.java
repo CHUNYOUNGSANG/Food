@@ -2,6 +2,9 @@ package project.food.domain.post.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +29,9 @@ import project.food.domain.like.postlike.repository.PostLikeRepository;
 import project.food.global.exception.CustomException;
 import project.food.global.exception.ErrorCode;
 import project.food.global.file.dto.UploadedFileInfo;
+import project.food.global.common.CachedPage;
 import project.food.global.file.service.FileStorage;
+import project.food.global.redis.PostCountService;
 
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +56,7 @@ public class PostService {
     private final TagRepository tagRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final PostCountService postCountService;
 
     /**
      * 게시글 생성
@@ -59,6 +65,11 @@ public class PostService {
      * @return 생성된 게시글 정보
      */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "posts", allEntries = true),
+            @CacheEvict(value = "restaurants-recommended", allEntries = true),
+            @CacheEvict(value = "restaurants-popular", allEntries = true)
+    })
     public PostResponseDto createPost(Long memberId, PostRequestDto request) {
 
         log.debug("게시글 생성 시작: memberId={}, title={}", memberId, request.getTitle());
@@ -131,7 +142,8 @@ public class PostService {
      * 게시글 전체 목록 조회 (최신순)
      * @return 게시글 목록
      */
-    public Page<PostResponseDto> getAllPosts(Pageable pageable) {
+    @Cacheable(value = "posts", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
+    public CachedPage<PostResponseDto> getAllPosts(Pageable pageable) {
 
         log.debug("게시글 전체 목록 조회 시작");
 
@@ -140,7 +152,8 @@ public class PostService {
 
         log.info("게시글 전체 목록 조회 완료: totalCount={}", posts.getTotalElements());
 
-        return posts;
+        return new CachedPage<>(posts.getContent(), pageable.getPageNumber(),
+                pageable.getPageSize(), posts.getTotalElements());
     }
 
     /**
@@ -149,7 +162,6 @@ public class PostService {
      * @param postId 게시글 ID
      * @return 게시글 상세 정보
      */
-    @Transactional
     public PostResponseDto getPost(Long postId) {
 
         log.debug("게시글 상세 조회 시작: postId={}", postId);
@@ -160,16 +172,13 @@ public class PostService {
                     return new CustomException(ErrorCode.POST_NOT_FOUND);
                 });
 
-        int beforeViewCount = post.getViewCount();
-        post.increaseViewCount();
-
-        log.debug("조회수 증가: postId={}, {} → {}",
-                postId, beforeViewCount, post.getViewCount());
+        // 조회수 Redis INCR (DB UPDATE 없이 Redis에서 관리)
+        long viewCount = postCountService.incrementViewCount(postId);
 
         log.info("게시글 상세 조회 완료: postId={}, title={}, viewCount={}",
-                postId, post.getTitle(), post.getViewCount());
+                postId, post.getTitle(), viewCount);
 
-        return PostResponseDto.from(post);
+        return PostResponseDto.from(post).withViewCount((int) viewCount);
     }
 
     /**
@@ -180,6 +189,7 @@ public class PostService {
      * @return 수정된 게시글 정보
      */
     @Transactional
+    @CacheEvict(value = "posts", allEntries = true)
     public PostResponseDto updatePost(Long postId, Long memberId, PostUpdateDto request) {
 
         log.debug("게시글 수정 시작: postId={}, memberId={}", postId, memberId);
@@ -286,6 +296,11 @@ public class PostService {
      * @param memberId 삭제 요청자 ID
      */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "posts", allEntries = true),
+            @CacheEvict(value = "restaurants-recommended", allEntries = true),
+            @CacheEvict(value = "restaurants-popular", allEntries = true)
+    })
     public void deletePost(Long postId, Long memberId) {
 
         log.debug("게시글 삭제 시작: postId={}, memberId={}", postId, memberId);
@@ -320,6 +335,10 @@ public class PostService {
         postLikeRepository.deleteByPostId(postId);      // 게시글 좋아요 삭제
 
         postRepository.delete(post);  // 게시글 삭제 (댓글 cascade 삭제)
+
+        // Redis 카운터 제거
+        postCountService.deleteViewCount(postId);
+        postCountService.deleteLikeCount(postId);
 
         log.info("게시글 삭제 완료: postId={}, memberId={}, deletedImages={}",
                 postId, memberId, filePaths.size());
