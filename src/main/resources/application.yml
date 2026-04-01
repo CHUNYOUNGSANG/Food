@@ -41,6 +41,10 @@ management:
     health:
       show-details: when-authorized
 
+kakao:
+  oauth:
+    redirect-uri: ${kakao.oauth.redirect-uri}
+
 naver:
   api:
     client-id: ${naver.api.client-id}
