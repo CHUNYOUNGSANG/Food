@@ -68,7 +68,6 @@ public class RestaurantService {
      * @param restaurantId 맛집 ID
      * @return 맛집 상세 정보 (리뷰 포함)
      */
-    @Cacheable(value = "restaurant", key = "#restaurantId")
     public RestaurantDetailResponse getDetail(Long restaurantId) {
         // 맛집 조회
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
