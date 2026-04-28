@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/api/members/refresh",
                                 "/api/members/check-email",
                                 "/api/members/check-nickname",
+                                "/api/oauth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()

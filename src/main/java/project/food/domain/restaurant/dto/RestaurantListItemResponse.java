@@ -1,7 +1,9 @@
 package project.food.domain.restaurant.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import project.food.domain.restaurant.entity.Restaurant;
 
 /**
@@ -10,6 +12,8 @@ import project.food.domain.restaurant.entity.Restaurant;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RestaurantListItemResponse {
 
     private Long id;         // 맛집 ID

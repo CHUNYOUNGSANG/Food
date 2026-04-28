@@ -39,6 +39,8 @@ spring:
 kakao:
   api:
     key: ${KAKAO_API_KEY}
+  oauth:
+    redirect-uri: ${KAKAO_OAUTH_REDIRECT_URI}
 
 naver:
   api:

@@ -38,6 +38,8 @@ cors:
 kakao:
   api:
     key: test-kakao-key
+  oauth:
+    redirect-uri: http://localhost:8080/oauth/kakao/callback
 
 naver:
   api:
